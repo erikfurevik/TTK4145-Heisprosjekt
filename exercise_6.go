@@ -1,6 +1,6 @@
 package main
 
-import "./network/bcast"
+import "./Network-go-master/network/bcast"
 // import "./network/localip"
 // import "./network/peers"
 // import "flag"
@@ -10,11 +10,10 @@ import "time"
 
 func main(){
     
-    // Make channels for listen and send
+    // Channels for listen and send
     numRx := make(chan int)
     numTx := make(chan int)
     
-    // First listen, then send
     go bcast.Receiver(16569, numRx)
     
     var num int = 0 // How far we have counted
@@ -23,7 +22,7 @@ func main(){
     fmt.Println("Listening for counter...")
     
     listen:
-    for {
+    for { // Listening
         select{
         case num = <-numRx:
             t = time.Now() //update for each recieve
@@ -32,7 +31,12 @@ func main(){
             }
         default:
             if(time.Since(t) > 2*time.Second){
-                fmt.Println("External counting stopped. Resuming count locally.")
+                if(num != 0){
+                    fmt.Println("External counting stopped. Resuming count locally:")
+                }
+                if(num == 0){
+                    fmt.Println("No counter detected. Starting count:")
+                }
                 break listen // stop listening
             }
         }
@@ -41,7 +45,7 @@ func main(){
     // CREATE BACKUP PROGRAM
     
     
-    for{
+    for{ // Counting
         go bcast.Transmitter(16569, numTx)
         fmt.Println("Local counter:", num)
         num++
