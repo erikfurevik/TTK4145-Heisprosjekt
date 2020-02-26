@@ -2,6 +2,7 @@ package main
 
 import (
 	"./elevio"
+	"./fsm"
 )
 
 func main() {
@@ -26,8 +27,10 @@ func main() {
 		go OH.UpdateHallAndCabButtons(receiveOrders)
 		go OH.UpdateFloor(receiveFloors)
 	*/
-	//fsm.TEST()
 
-	elevio.SetMotorDirection(elevio.MD_Up)
+	go fsm.FSM()
+	for {
+
+	}
 
 }
