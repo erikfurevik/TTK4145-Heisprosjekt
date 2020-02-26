@@ -1,13 +1,10 @@
-package fsm 
-
+package fsm
 
 import (
-	"fmt"
 	"../elevio"
-
 )
 
-const floors int
+const floors int = 4
 
 /*value 1 = up
 value 2 = down
@@ -16,16 +13,22 @@ value 3 = cab
 
 /*så fort kost funksjonen bergner om en ordre skal som skal bli tatt lokalt lagres det i lokal queue*/
 
-var local_queue[floors] int
-var motor_direction_var int
+var Local_queue = [4]int{0, 0, 0, 0}
+var motor_direction_var int = 0
 
+/*implement initialize*/
+func init_elevator() {
+	if elevio.GetFloor() == -1 {
+		elevio.SetMotorDirection(-1)
+	}
+}
 
 /*this section implements the functions that getthe motor started from idle*/
-//helper functions to initialize the motor 
-func local_queue_check_above(sensor int)int{
-	for var floor int = 0; floor < 4; floor++ {
-		if 0 < local_queue[floor]{
-			if sensor < floor{
+//helper functions to initialize the motor
+func local_queue_check_above(sensor int) int {
+	for floor := 0; floor < 4; floor++ {
+		if 0 < Local_queue[floor] {
+			if sensor < floor {
 				return 1
 			}
 		}
@@ -33,10 +36,10 @@ func local_queue_check_above(sensor int)int{
 	return 0
 }
 
-func local_queue_check_below(sensor int) int{
-	for var floor int = 0; floor < 4; floor++{
-		if 0 < local_queue[floor] {
-			if sesnor > floor {
+func local_queue_check_below(sensor int) int {
+	for floor := 0; floor < 4; floor++ {
+		if 0 < Local_queue[floor] {
+			if sensor > floor {
 				return 1
 			}
 		}
@@ -44,87 +47,50 @@ func local_queue_check_below(sensor int) int{
 	return 0
 }
 
-func local_queue_check_for_saved_order()int{
+func start_motor_from_idle() {
+	if local_queue_check_above(elevio.GetFloor()) == 1 {
+		set_motor_direction_variable(1)
+		elevio.SetMotorDirection(1)
+	}
+	if local_queue_check_below(elevio.GetFloor()) == -1 {
+		set_motor_direction_variable(-1)
+		elevio.SetMotorDirection(-1)
+	}
+}
+
+func check_order_at_floor() int {
+	if Local_queue[elevio.GetFloor()] > 0 {
+		return 1
+	}
+	return 0
+}
+
+func local_queue_check_for_saved_order() int {
 	var i int = 0
-	for int i = 0 i < 4; i++ {
-		if local_queue[i] != 0{
-			i += local_queue[i]	
+	for i := 0; i < 4; i++ {
+		if Local_queue[i] != 0 {
+			i += Local_queue[i]
 		}
 	}
 	if i > 0 {
 		return 1
-	}
-	else {
+	} else {
 		return 0
 	}
 }
 
-
-func set_motor_direction_variable(direction int){
+func set_motor_direction_variable(direction int) {
 	motor_direction_var = direction
-	//possbily set a go routine
+	//possbily set a go routinefor
 }
-
-func get_motor_direction_variable()int {
+func get_motor_direction_variable() int {
 	return motor_direction_var
 }
 
-/*IDLE -->RUNNING*/
-func start_motor_from_idle(){
-	if local_queue_check_for_saved_order(){
-		if local_queue_check_above(elevio.getFloor()){
-			set_motor_direction_variable(1)
-			elevio.setMotorDirection(1)
-		}
-		if local_queue_check_below(elevio.getFloor()){
-			set_motor_direction_variable(-1)
-			elevio.setMotorDirection(-1)
-		}
-	}
-}
-
-/*IDLE -->DOOR*/
-func check_order_at_floor(){
-	for var floor int = 0; floor < 4; floor++{
-		if local_queue[floor] > 0{
-			if floor == elevio.getFloor(){
-				return 1
-			}
-		}
-	} 
-}
-
-
-/*IDLE -->RUNNING 
-implemnt the engine timer start 
-*/
-
-/*IDLE -->DOOR
-implement the door start timer
-*/
-
-
-
-/*The logic part whether the elavator should stop at floor*/
-
-
-//help functions
-func up_button_at_floor()int{
-	for var floor int = 0; floor < 4; floor++{
-			if local_queue[floor] == 1{
-				if floor == elevio.getFloor(){
-					return 1
-				} 
-			}
-	} 
-	return 0
-}
-
-
-func down_button_at_floor()int{
-	for var floor int = 0; floor < 4; floor++{
-		if local_queue[floor] = 2{
-			if local_queue[floor] = elevio.getFloor(){
+func cab_button_at_floor() int {
+	for floor := 0; floor < 4; floor++ {
+		if 3 == Local_queue[floor] {
+			if elevio.GetFloor() == floor {
 				return 1
 			}
 		}
@@ -132,10 +98,10 @@ func down_button_at_floor()int{
 	return 0
 }
 
-func cab_button_at_floor()int{
-	for var floor int = 0; floor < 4; floor++{
-		if local_queue[floor] = 3{
-			if local_queue[floor] = elevio.getFloor(){
+func down_button_at_floor() int {
+	for floor := 0; floor < 4; floor++ {
+		if 2 == Local_queue[floor] {
+			if elevio.GetFloor() == floor {
 				return 1
 			}
 		}
@@ -143,64 +109,72 @@ func cab_button_at_floor()int{
 	return 0
 }
 
-
+func up_button_at_floor() int {
+	for floor := 0; floor < 4; floor++ {
+		if 1 == Local_queue[floor] {
+			if elevio.GetFloor() == floor {
+				return 1
+			}
+		}
+	}
+	return 0
+}
 
 /*RUNNING --> DOOR*/
-func check_if_correct_floor(){
-	if elevio.getFloor() != -1{	
-		if cab_button_at_floor(){
+func check_if_correct_floor() int {
+	if elevio.GetFloor() != -1 {
+		if cab_button_at_floor() == 1 {
 			return 1
 		}
-		if get_motor_direction_variable() == -1{
-			if down_button_at_floor() {
+		if get_motor_direction_variable() == -1 {
+			if down_button_at_floor() == 1 {
 				return 1
 			}
-			if up_button_at_floor(){
-				if !local_queue_check_below(elevio.getFloor()){
+			if up_button_at_floor() == 1 {
+				if local_queue_check_below(elevio.GetFloor()) == 0 {
 					return 1
 				}
 			}
 		}
-		if get_motor_direction_variable() = 1{
-			if up_button_at_floor(){
+		if get_motor_direction_variable() == 1 {
+			if up_button_at_floor() == 1 {
 				return 1
 			}
-			if down_button_at_floor(){
-				if !local_queue_check_above(elevio.getFloor()){
+			if down_button_at_floor() == 1 {
+				if local_queue_check_above(elevio.GetFloor()) == 0 {
 					return 1
 				}
 			}
 		}
 	}
+	return 0
 }
 
-
-/*RUNNING -->DOOR 
+/*RUNNING -->DOOR
 implment the door start timer*/
-
 
 /*RUNNING -->MOTORFAILURE
 implment the check enginer timer above threshold
 */
 
-
 /*The logic part for what the door state should do*/
 
-func open_door(){
+func open_door() {
 	elevio.SetDoorOpenLamp(true)
 }
-func close_door(){
+func close_door() {
 	elevio.SetDoorOpenLamp(false)
 }
 
-func local_queue_erase_floor_buttons(){
-	local_queue[elevio.getFloor()] = 0
-	//posssibly send a go routine that updates the order handler module
-} 
+func local_queue_erase_floor_buttons() {
+	if Local_queue[elevio.GetFloor()] != 0 {
+		Local_queue[elevio.GetFloor()] = 0
+		//posssibly send a go routine that updates the order handler module
+	}
+}
 
 /*DOOR -->IDLE ||RUNNING
 implement the check door timer above threshold*/
-
 
 /*DOOR -->IDLE*/
 //check for check_order comes empty
@@ -209,50 +183,81 @@ implement the check door timer above threshold*/
 /*DOOR --> RUNNING*/
 //start engine timer
 //check that check_order comes not empty
-func start_motor_from_door(){
-	if local_queue_check_above(elevio.getFloor()) && !local_queue_check_below(elevio.getFloor()){
+func start_motor_from_door() {
+	if local_queue_check_above(elevio.GetFloor()) == 1 && local_queue_check_below(elevio.GetFloor()) == 0 {
 		set_motor_direction_variable(1)
 	}
-	if !local_queue_check_above(elevio.getFloor()) && local_queue_check_below(elevio.getFloor()){
+	if local_queue_check_above(elevio.GetFloor()) == 0 && local_queue_check_below(elevio.GetFloor()) == 1 {
 		set_motor_direction_variable(-1)
 	}
 }
 
-
-
-
-
-func erase_all_buttons(){
-	for  var floor int = 0; floor < 4; floor++{
-		local_queue{floor] = 0}
+func erase_all_buttons() {
+	for floor := 0; floor < 4; floor++ {
+		Local_queue[floor] = 0
 	}
 	//possily send a go routine that updates that the order handler module
 }
 
-
-
 /*functions that the cost function will need*/
-func check_if_different_order_is_already_saved_at_floor(floor int, button int)int{
-	if local_queue{floor] == 0 {
+func check_if_different_order_is_already_saved_at_floor(floor int, button int) int {
+	if Local_queue[floor] == 0 {
 		return 0
-	}
-	else {
-		if local_queue[floor] != button {
+	} else {
+		if Local_queue[floor] != button {
 			return 1
+		}
+	}
+	return 0
+}
+
+//if the cost function desides that the order shouldbe taken locally, it sends in the floor and button to this function so that local queue can be updated
+func save_order_into_local_queue(floor int, button int) {
+	if check_if_different_order_is_already_saved_at_floor(floor, button) == 1 {
+		Local_queue[floor] = 3
+	} else {
+		Local_queue[floor] = button
+	}
+}
+
+//need a function that constantly stores changes checks changes in the local_queue and updates the order matrix in order_handler
+
+func FSM() {
+	var STATE string = "INIT"
+	for true {
+		switch STATE {
+		case "INIT":
+			init_elevator()
+			STATE = "IDLE"
+			break
+		case "IDLE":
+			start_motor_from_idle()
+			if get_motor_direction_variable() != 0 {
+				//set enginer timer
+				STATE = "RUNNING"
+			}
+			if check_order_at_floor() == 1 {
+				STATE = "DOOR"
+				//set door timer
+			}
+			break
+		case "RUNNING":
+			if check_if_correct_floor() == 1 {
+				//door start timer
+				elevio.SetMotorDirection(0)
+				local_queue_erase_floor_buttons()
+				STATE = "DOOR"
+			}
+			// if motor failure
+			break
+		case "DOOR":
+			//timer over
+			start_motor_from_door()
+		case "MOTORFAILURE":
 		}
 	}
 }
 
-
-//if the cost function desides that the order shouldbe taken locally, it sends in the floor and button to this function so that local queue can be updated
-func save_order_into_local_queue(floor int, button int){
-	if check_if_different_order_is_already_saved_at_floor(floor, button){
-		local_queue[floor] = 3;
-	}
-	else{
-		local_queue[floor] = button
-	}
+func TEST() {
+	elevio.SetMotorDirection(elevio.MD_Up)
 }
-
-
-//need a function that constantly stores changes checks changes in the local_queue and updates the order matrix in order_handler

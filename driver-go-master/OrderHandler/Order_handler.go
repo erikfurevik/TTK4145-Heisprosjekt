@@ -32,9 +32,14 @@ func UpdateHallAndCabButtons(receiver chan elevio.ButtonEvent) {
 		case data := <-receiver:
 			if data.Button == elevio.BT_Cab {
 				CabButtons[data.Floor][0] = 1
-			}func WriteFloor(col int, value int){
-				Floor[col] = value
 			}
+			if data.Button == elevio.BT_HallUp {
+				HallButtons[data.Floor][1] = 1 //trur jeg
+			}
+			if data.Button == elevio.BT_HallDown {
+				HallButtons[data.Floor][0] = 1 //trur jeg
+			}
+
 		}
 		fmt.Println(HallButtons)
 	}
@@ -69,5 +74,3 @@ func WriteHalButtons(row int, col int, value int) {
 func WriteCabButtons(row int, col int, value int) {
 	CabButtons[row][col] = value
 }
-
-
