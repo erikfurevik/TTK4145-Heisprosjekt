@@ -5,7 +5,7 @@ import (
 	// "./network/peers"
 	// "flag"
 	"fmt"
-	"os"
+	// "os"
 	"time"
 )
 
@@ -17,19 +17,21 @@ type ElevatorData struct {
 	// State		int
 	// Location	int
 	// Direction	int
-	// Requests_up [NUMBER_OF_FLOORS]
+	// RequestsUp [NUMBER_OF_FLOORS-1]bool
+	// RequestsDown [NUMBER_OF_FLOORS-1]bool
+	// RequestsCab [NUMBER_OF_FLOORS]bool
 }
 
 func main(){
-	
+
 	dataRx := make(chan ElevatorData)
 	dataTx := make(chan ElevatorData)
-	
+
 	sendData := make(chan ElevatorData)
-	
+
 	go bcast.Transmitter(16570, dataTx)
 	go bcast.Receiver(16570, dataRx)
-	
+
 	// This sends data to network. Test only.
 	// Should replace with real data from main.
 	go func(){
@@ -39,8 +41,8 @@ func main(){
 			sendData<- info
 			time.Sleep(time.Second*1)
 		}
-	}
-	
+	}()
+
 	for{
 		select{
 		case r := <-dataRx:
@@ -49,6 +51,4 @@ func main(){
 			dataTx<- s
 		}
 	}
-	
-	
 }
