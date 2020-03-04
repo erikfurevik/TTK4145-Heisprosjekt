@@ -1,6 +1,6 @@
 package main
 
-import "./Network-go-master/network/bcast"
+import "../network/bcast"
 // import "./network/localip"
 // import "./network/peers"
 // import "flag"
@@ -41,15 +41,15 @@ func main(){
             }
         }
     }
-
+    
     fmt.Println("Creating clone...")
-    go exec.Command("gnome-terminal", "-x", "go", "run", "TTK4145-Heisprosjekt/exercise_6.go").Run()
+    go exec.Command("gnome-terminal", "-x", "go", "run", "exercise_6.go").Run()
     
     go bcast.Transmitter(16569, numTx)
-
+    
     // Give time to setup clone and transmitter
     time.Sleep(1*time.Second)
-
+    
     fmt.Println("Starting counter:")
     for{ // Counting
         num++
