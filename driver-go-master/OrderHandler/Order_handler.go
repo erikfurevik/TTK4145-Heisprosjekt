@@ -3,11 +3,15 @@ package OrderHandler
 import (
 	"fmt"
 
+	"../config"
 	"../elevio"
 )
 
-const NumFloor int = 4
-const NumElevator int = 3
+/*const (
+	BtnUP
+	BtnDown
+	BtnInside
+)*/
 
 type ArrayID struct {
 	HallButtons int
@@ -17,12 +21,14 @@ type ArrayID struct {
 	State       int
 }
 
-var ID [NumElevator]int
-var State [NumElevator]int
-var Floor [NumElevator]int
+var ID [config.NumElevator]int
 
-var HallButtons [NumFloor][2]int
-var CabButtons [NumFloor][NumFloor]int
+//var State [config.NumElevator]int
+var Floor [config.NumElevator]int
+
+var HallButtonsElevator1 [config.NumFloor][2]int
+
+var CabButtons [config.NumFloor][config.NumFloor]int
 
 /*this function continously updates HallButtons and CabButtons*/
 func UpdateHallAndCabButtons(receiver chan<- elevio.ButtonEvent) {
@@ -33,13 +39,13 @@ func UpdateHallAndCabButtons(receiver chan<- elevio.ButtonEvent) {
 				CabButtons[data.Floor][0] = 1
 			}
 			if data.Button == elevio.BT_HallUp {
-				HallButtons[data.Floor][1] = 1 //trur jeg
+				HallButtonsElevator1[data.Floor][1] = 1 //trur jeg
 			}
 			if data.Button == elevio.BT_HallDown {
-				HallButtons[data.Floor][0] = 1 //trur jeg
+				HallButtonsElevator1[data.Floor][0] = 1 //trur jeg
 			}
 		}
-		fmt.Println(HallButtons)
+		fmt.Println(HallButtonsElevator1)
 	}
 }
 

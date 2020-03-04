@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"../config"
 	"../elevio"
 )
 
@@ -303,3 +304,50 @@ func save_order_into_local_queue(floor int, button int) {
 }
 
 //need a function that constantly stores changes checks changes in the local_queue and updates the order matrix in order_handler
+
+//The new state machine
+type StateChannels struct {
+	OrderComplete chan int
+	Elevator      chan config.Elev
+	//StateError 	chan error
+	NewOrder       chan config.Keypress
+	ArrivedAtFloor chan int
+}
+
+func RunElevator(channel StateChannels) {
+	elevator := config.Elev {
+	State: 	config.idle
+	Dir: elevio.MD_Stop,
+	Floor: elevio.GetFloor()
+	}
+
+	DoorTimer := time.NewTimer(3 * time.Second)
+	EngineTimer := time.NewTimer(3 * time.Second)
+	DoorTimer.Stop()
+	EngineTimer.Stop()
+
+	orderCleared := false
+
+	channel.Elevator <- elevator
+
+	for {
+		select {
+		case newOrder := <-channel.NewOrder:
+			if newOrder.Done {
+				elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
+				elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
+				orderCleared = true
+
+			} else {
+				elevator.Queue[newOrder.Floor][newOrder.Btn] = true
+			}
+			switch elevator.State {
+			case config.idle:
+				elevator.Dir = chooseDirection(elevator)
+				elevio.SetMotorDirection(elevator.Dir)
+
+			}
+		}
+	}
+
+}
