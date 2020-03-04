@@ -16,15 +16,16 @@ value 3 = cab
 
 /*så fort kost funksjonen bergner om en ordre skal som skal bli tatt lokalt lagres det i lokal queue*/
 
-var Local_queue = [4]int{0, 2, 0, 1}
+var Local_queue = [4]int{0, 2, 0, 0}
 var motor_direction_var int = 0
 
 /*implement initialize*/
 func init_elevator() {
-	for elevio.GetFloor() == -1 {
+	if elevio.GetFloor() == -1 {
 		elevio.SetMotorDirection(-1)
+	} else {
+		elevio.SetMotorDirection(0)
 	}
-	elevio.SetMotorDirection(0)
 }
 
 /*this section implements the functions that getthe motor started from idle*/
@@ -236,8 +237,12 @@ func FSM() {
 	for true {
 		switch STATE {
 		case "INIT":
-			init_elevator()
-			STATE = "IDLE"
+			if elevio.GetFloor() == -1 {
+				elevio.SetMotorDirection(-1)
+			} else {
+				elevio.SetMotorDirection(0)
+				STATE = "IDLE"
+			}
 			break
 		case "IDLE":
 			start_motor_from_idle()
@@ -250,7 +255,6 @@ func FSM() {
 				Door_timer = time.Now()
 				//set door timer
 			}
-			fmt.Println(STATE)
 			break
 		case "RUNNING":
 			if check_if_correct_floor() == 1 {
@@ -263,6 +267,7 @@ func FSM() {
 			// if motor failure
 			break
 		case "DOOR":
+
 			open_door()
 			if check_order_at_floor() == 1 {
 				Door_timer = time.Now()
@@ -291,7 +296,6 @@ func FSM() {
 				} else {
 					STATE = "IDLE"
 				}
-				fmt.Println(STATE)
 			}
 			break
 		case "MOTORFAILURE":
