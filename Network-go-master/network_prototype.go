@@ -6,27 +6,15 @@ import (
 	// "flag"
 	"fmt"
 	// "os"
-	"time"
 	// "strconv"
 )
 
 var NUMBER_OF_FLOORS int = 4
 
-type ElevatorData struct {
-    ID          string
-    TimeStamp   int
-	// State		int
-	// Location	int
-	// Direction	int
-	// RequestsUp [NUMBER_OF_FLOORS-1]bool
-	// RequestsDown [NUMBER_OF_FLOORS-1]bool
-	// RequestsCab [NUMBER_OF_FLOORS]bool
-}
-
-func main(){
+func network(NetTx <-chan ElevatorData, NetRx chan<- ElevatorData){
 	
 	// Get local IP adress
-	localIP, err := localip.LocalIP() 
+	localIP, err := localip.LocalIP()
 	if err != nil {
 		fmt.Println("Error")
 	}
@@ -37,21 +25,13 @@ func main(){
 	dataRx := make(chan ElevatorData)
 	dataTx := make(chan ElevatorData)
 	
-	sendData := make(chan ElevatorData)
 	
-	go bcast.Transmitter(16731, dataTx)
-	go bcast.Receiver(16731, dataRx)
+	go bcast.Transmitter(16731, dataTx)	// start broadcaster
+	go bcast.Receiver(16731, dataRx)	// start broadcast receiver
 	
 	// This sends data to network. Test only.
 	// Should replace with real data from main.
-	go func(){
-		info := ElevatorData{localIP, 0}
-		for{
-			info.TimeStamp++
-			sendData<- info
-			time.Sleep(time.Second*1)
-		}
-	}()
+
 	
 	for{
 		select{
@@ -59,11 +39,10 @@ func main(){
 			if r.ID == localIP{
 				// Sent from local computer
 				fmt.Println("Ignore")
-			}else{
-				// From different computer
-				fmt.Println(r)
 			}
-		case s := <-sendData:
+			NetRx <- r
+			
+		case s := <-NetTx:
 			dataTx<- s
 		}
 	}
