@@ -29,6 +29,7 @@ const NETWORK_TIMEOUT time.Duration = time.Second*5 // network timeout
 const NETWORK_POLLRATE time.Duration = 20 * time.Millisecond
 
 var peers map[string]time.Time			// map of all peers
+var elevData map[string]ElevatorData	// map of all data
 
 func network(NetTx <-chan ElevatorData, NetRx chan<- ElevatorData){
 	
@@ -39,6 +40,7 @@ func network(NetTx <-chan ElevatorData, NetRx chan<- ElevatorData){
 		return
 	}
 	localID := localAdress
+	fmt.Println("Local ID:", localID)
 	// localID := strings.Split(localAdress, ".")[3]
 	// Can be converted to int like this:
 	// intIP, err := strconv.Atoi(splitIP[3])

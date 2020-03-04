@@ -10,16 +10,21 @@ func main(){
     
     go network(NetTx, NetRx)            // Start network module
     
-    info := ElevatorData{"Hi", 0}       // create elevator struct
+    info := ElevatorData{"10.22.72.183", 0} // create elevator struct
+    go func(){
+        var p int = 0
+        for{
+            p++
+            info.Timestamp++
+            NetTx<- info    // Send to network
+            time.Sleep(time.Second)
+        }
+    }()
     
     for{
-        info.Timestamp++
-        NetTx<- info                    // Send to network
-        time.Sleep(time.Second*1)
         select{
-        case r:= <-NetRx:               // Message from network
+        case r:= <-NetRx:   // Message from network
             fmt.Println(r)
         }
     }
-    
 }

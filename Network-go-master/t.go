@@ -13,8 +13,16 @@ func main(){
     peers["you"] = time.Now()
     peers["me"] = time.Now()
     
-    if peers["new"] == time.Zero() {
-        fmt.Println("hello")
+    time.Sleep(time.Second*2)
+    for{
+        for k,v := range peers{
+            time.Sleep(time.Nanosecond*5e8)
+            if time.Since(v) > time.Second{
+                delete(peers, k)
+                fmt.Println(peers)
+                break
+            }
+        }
     }
     
 }
