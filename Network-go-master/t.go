@@ -1,28 +1,21 @@
 package main
 
 import "fmt"
-import "time"
+// import "time"
+import "reflect"
 
-var peers map[string]time.Time
+type ElevatorData struct {	// state of one elevator
+    ID          string
+    Timestamp   int
+	// State       int
+	// Location	   int
+	// Direction   int
+	// RequestsUp [NUMBER_OF_FLOORS-1]bool
+	// RequestsDown [NUMBER_OF_FLOORS-1]bool
+	// RequestsCab [NUMBER_OF_FLOORS]bool
+}
 
 func main(){
-    
-    peers = make(map[string]time.Time)
-    
-    peers["me"] = time.Now()
-    peers["you"] = time.Now()
-    peers["me"] = time.Now()
-    
-    time.Sleep(time.Second*2)
-    for{
-        for k,v := range peers{
-            time.Sleep(time.Nanosecond*5e8)
-            if time.Since(v) > time.Second{
-                delete(peers, k)
-                fmt.Println(peers)
-                break
-            }
-        }
-    }
-    
+    info := ElevatorData{"10.22.72.183", 0} // create elevator struct
+    p := reflect.TypeOf(info).String()
 }

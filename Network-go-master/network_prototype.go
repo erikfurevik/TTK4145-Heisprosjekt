@@ -9,6 +9,7 @@ import (
 	// "strings"
 	// "os"
 	// "strconv"
+	"reflect"
 )
 
 
@@ -30,6 +31,7 @@ const NETWORK_POLLRATE time.Duration = 20 * time.Millisecond
 
 var peers map[string]time.Time			// map of all peers
 var elevData map[string]ElevatorData	// map of all data
+var rxCounter map[string]int			// map of times received data
 
 func network(NetTx <-chan ElevatorData, NetRx chan<- ElevatorData){
 	
@@ -46,12 +48,15 @@ func network(NetTx <-chan ElevatorData, NetRx chan<- ElevatorData){
 	// intIP, err := strconv.Atoi(splitIP[3])
 	
 	peers = make(map[string]time.Time)
+	elevData = make(map[string]ElevatorData)
+	rxCounter = make(map[string]int)
 	
 	dataRx := make(chan ElevatorData)
 	dataTx := make(chan ElevatorData)
 	
 	go bcast.Transmitter(16731, dataTx)	// start broadcaster
 	go bcast.Receiver(16731, dataRx)	// start broadcast receiver
+	
 	
 	
 	// NETWORK WATCHDOG:
@@ -76,26 +81,45 @@ func network(NetTx <-chan ElevatorData, NetRx chan<- ElevatorData){
 	for{
 		select{
 		case r := <-dataRx:	// Message received
+		
+			// Checks for correct datatype
+			if(reflect.TypeOf(r).String() != "main.ElevatorData"){
+				fmt.Println("Wrong datatype received")
+				break
+			}
+			
+			// Handles message errors
+			if elevData[r.ID] != r {
+				rxCounter[r.ID] = 0
+				fmt.Println("New message")
+			}
+			elevData[r.ID] = r
+			rxCounter[r.ID]++
+			if rxCounter[r.ID] < 4 {
+				fmt.Println("Waiting for confirmation")
+				break	// Message may be faulty
+			}
+			
 			if peers[r.ID].IsZero() {
 				if r.ID == localID {
 					fmt.Println("We're back online:")
 					// regained connection to network
 				} else {
 					fmt.Println("New peer:")
-					// transmit data
+					NetRx <- r
 				}
 			} else if r.ID == localID{
 				fmt.Println("Message from self:")
 				// ignore
 			} else {
 				fmt.Println("Update from peer:")
-				// put data into storage
+				NetRx <- r
 			}
 			peers[r.ID] = time.Now() // Update receive time
-			NetRx <- r // Pass on data
-	
+			
 		case s := <-NetTx:
-			dataTx<- s
+			// sends to network
+			dataTx <- s
 		}
 	}
 }

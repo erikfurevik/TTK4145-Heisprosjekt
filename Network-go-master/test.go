@@ -14,8 +14,8 @@ func main(){
     go func(){
         var p int = 0
         for{
-            p++
             info.Timestamp++
+            p++
             NetTx<- info    // Send to network
             time.Sleep(time.Second)
         }
