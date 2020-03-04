@@ -28,9 +28,10 @@ func main() {
 		go OH.UpdateFloor(receiveFloors)
 	*/
 
-	go fsm.FSM()
+	fsm.FSM()
+	//t := timer.GetTime()
 	for {
-
+		//fmt.Println(timer.CheckTime(t))
 	}
 
 }

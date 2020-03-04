@@ -1,6 +1,9 @@
 package fsm
 
 import (
+	"fmt"
+	"time"
+
 	"../elevio"
 )
 
@@ -13,7 +16,7 @@ value 3 = cab
 
 /*så fort kost funksjonen bergner om en ordre skal som skal bli tatt lokalt lagres det i lokal queue*/
 
-var Local_queue = [4]int{0, 2, 1, 3}
+var Local_queue = [4]int{0, 2, 0, 1}
 var motor_direction_var int = 0
 
 /*implement initialize*/
@@ -53,7 +56,7 @@ func start_motor_from_idle() {
 		set_motor_direction_variable(1)
 		elevio.SetMotorDirection(1)
 	}
-	if local_queue_check_below(elevio.GetFloor()) == -1 {
+	if local_queue_check_below(elevio.GetFloor()) == 1 {
 		set_motor_direction_variable(-1)
 		elevio.SetMotorDirection(-1)
 	}
@@ -191,9 +194,12 @@ func start_motor_from_door() {
 	if local_queue_check_above(elevio.GetFloor()) == 0 && local_queue_check_below(elevio.GetFloor()) == 1 {
 		set_motor_direction_variable(-1)
 	}
+	if local_queue_check_for_saved_order() == 0 {
+		set_motor_direction_variable(0)
+	}
 }
 
-func erase_all_buttons() {
+func local_queue_erase_all_buttons() {
 	for floor := 0; floor < 4; floor++ {
 		Local_queue[floor] = 0
 	}
@@ -225,6 +231,8 @@ func save_order_into_local_queue(floor int, button int) {
 
 func FSM() {
 	var STATE string = "INIT"
+	Door_timer := time.Now()
+	//engine_timer := timer.GetTime()
 	for true {
 		switch STATE {
 		case "INIT":
@@ -239,22 +247,53 @@ func FSM() {
 			}
 			if check_order_at_floor() == 1 {
 				STATE = "DOOR"
+				Door_timer = time.Now()
 				//set door timer
 			}
+			fmt.Println(STATE)
 			break
 		case "RUNNING":
 			if check_if_correct_floor() == 1 {
 				//door start timer
-				elevio.SetMotorDirection(0)
+				Door_timer = time.Now()
 				local_queue_erase_floor_buttons()
+				elevio.SetMotorDirection(0)
 				STATE = "DOOR"
 			}
 			// if motor failure
 			break
 		case "DOOR":
-			//timer over
-			start_motor_from_door()
-			//STATE = "RUNNING"
+			open_door()
+			if check_order_at_floor() == 1 {
+				Door_timer = time.Now()
+			}
+
+			local_queue_erase_floor_buttons()
+
+			if time.Now().Sub(Door_timer).Seconds() > 3 {
+				close_door()
+				start_motor_from_door()
+
+				if get_motor_direction_variable() != 0 {
+					value := get_motor_direction_variable()
+					fmt.Println(value)
+
+					switch value {
+					case 1:
+						elevio.SetMotorDirection(elevio.MD_Up)
+						break
+					case -1:
+						elevio.SetMotorDirection(elevio.MD_Down)
+						break
+					}
+
+					STATE = "RUNNING"
+				} else {
+					STATE = "IDLE"
+				}
+				fmt.Println(STATE)
+			}
+			break
 		case "MOTORFAILURE":
 		}
 	}

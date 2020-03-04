@@ -1,13 +1,15 @@
-package main
+package timer
 
-import "time"
+import (
+	"time"
+)
 
-func GetTime() time.Time{
-    return time.Now()
+func GetTime() time.Time {
+	return time.Now()
 }
 
-func CheckTime(t time.Time) time.Duration{
-    return time.Since(t)
+func CheckTime(t time.Time) time.Duration {
+	return time.Since(t)
 }
 
 // Example code:
