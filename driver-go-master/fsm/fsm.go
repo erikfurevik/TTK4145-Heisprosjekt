@@ -16,7 +16,7 @@ value 3 = cab
 
 /*så fort kost funksjonen bergner om en ordre skal som skal bli tatt lokalt lagres det i lokal queue*/
 
-var Local_queue = [4]int{0, 2, 0, 0}
+var Local_queue = [4]int{0, 0, 1, 1}
 var motor_direction_var int = 0
 
 /*implement initialize*/
@@ -53,6 +53,7 @@ func local_queue_check_below(sensor int) int {
 }
 
 func start_motor_from_idle() {
+
 	if local_queue_check_above(elevio.GetFloor()) == 1 {
 		set_motor_direction_variable(1)
 		elevio.SetMotorDirection(1)
@@ -155,9 +156,6 @@ func check_if_correct_floor() int {
 	return 0
 }
 
-/*RUNNING -->DOOR
-implment the door start timer*/
-
 /*RUNNING -->MOTORFAILURE
 implment the check enginer timer above threshold
 */
@@ -177,13 +175,6 @@ func local_queue_erase_floor_buttons() {
 		//posssibly send a go routine that updates the order handler module
 	}
 }
-
-/*DOOR -->IDLE ||RUNNING
-implement the check door timer above threshold*/
-
-/*DOOR -->IDLE*/
-//check for check_order comes empty
-//set_motor_direction_variable(0)
 
 /*DOOR --> RUNNING*/
 //start engine timer
@@ -219,22 +210,12 @@ func check_if_different_order_is_already_saved_at_floor(floor int, button int) i
 	return 0
 }
 
-//if the cost function desides that the order shouldbe taken locally, it sends in the floor and button to this function so that local queue can be updated
-func save_order_into_local_queue(floor int, button int) {
-	if check_if_different_order_is_already_saved_at_floor(floor, button) == 1 {
-		Local_queue[floor] = 3
-	} else {
-		Local_queue[floor] = button
-	}
-}
-
-//need a function that constantly stores changes checks changes in the local_queue and updates the order matrix in order_handler
-
 func FSM() {
 	var STATE string = "INIT"
 	Door_timer := time.Now()
 	//engine_timer := timer.GetTime()
 	for true {
+		fmt.Println(STATE)
 		switch STATE {
 		case "INIT":
 			if elevio.GetFloor() == -1 {
@@ -245,16 +226,21 @@ func FSM() {
 			}
 			break
 		case "IDLE":
-			start_motor_from_idle()
-			if get_motor_direction_variable() != 0 {
-				//set enginer timer
-				STATE = "RUNNING"
-			}
 			if check_order_at_floor() == 1 {
-				STATE = "DOOR"
 				Door_timer = time.Now()
+				STATE = "DOOR"
+
 				//set door timer
 			}
+			if check_order_at_floor() == 0 {
+				start_motor_from_idle()
+			}
+			if get_motor_direction_variable() != 0 {
+				//set enginer timer
+				fmt.Println("hello world")
+				STATE = "RUNNING"
+			}
+
 			break
 		case "RUNNING":
 			if check_if_correct_floor() == 1 {
@@ -306,3 +292,14 @@ func FSM() {
 func TEST() {
 	init_elevator()
 }
+
+//if the cost function desides that the order shouldbe taken locally, it sends in the floor and button to this function so that local queue can be updated
+func save_order_into_local_queue(floor int, button int) {
+	if check_if_different_order_is_already_saved_at_floor(floor, button) == 1 {
+		Local_queue[floor] = 3
+	} else {
+		Local_queue[floor] = button
+	}
+}
+
+//need a function that constantly stores changes checks changes in the local_queue and updates the order matrix in order_handler

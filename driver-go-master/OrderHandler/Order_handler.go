@@ -17,16 +17,15 @@ type ArrayID struct {
 	State       int
 }
 
-var ID [1][NumElevator]int
-
+var ID [NumElevator]int
 var State [NumElevator]int
 var Floor [NumElevator]int
 
 var HallButtons [NumFloor][2]int
 var CabButtons [NumFloor][NumFloor]int
 
-/*thid function continously updates HallButtons and CabButtons*/
-func UpdateHallAndCabButtons(receiver chan elevio.ButtonEvent) {
+/*this function continously updates HallButtons and CabButtons*/
+func UpdateHallAndCabButtons(receiver chan<- elevio.ButtonEvent) {
 	for {
 		select {
 		case data := <-receiver:
@@ -39,7 +38,6 @@ func UpdateHallAndCabButtons(receiver chan elevio.ButtonEvent) {
 			if data.Button == elevio.BT_HallDown {
 				HallButtons[data.Floor][0] = 1 //trur jeg
 			}
-
 		}
 		fmt.Println(HallButtons)
 	}
