@@ -13,23 +13,19 @@ func main() {
 	//var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
 
-	/*
-		receiveOrders := make(chan elevio.ButtonEvent)
-		receiveFloors := make(chan int)
-		drv_obstr := make(chan bool)
-		drv_stop := make(chan bool)
+	receiveOrders := make(chan elevio.ButtonEvent)
+	receiveFloors := make(chan int)
+	channels := fsm.StateChannels{}
 
-		go elevio.PollButtons(receiveOrders)
-		go elevio.PollFloorSensor(receiveFloors)
-		go elevio.PollObstructionSwitch(drv_obstr)
-		go elevio.PollStopButton(drv_stop)
+	go elevio.PollButtons(receiveOrders)
+	go elevio.PollFloorSensor(receiveFloors)
 
-		go OH.UpdateHallAndCabButtons(receiveOrders)
-		go OH.UpdateFloor(receiveFloors)
-	*/
+	go fsm.UpdateKeys(channels, receiveOrders, receiveFloors)
 
-	go fsm.FSM()
-	//t := timer.GetTime()
+	go fsm.RunElevator(channels)
+	//go OH.UpdateHallAndCabButtons(receiveOrders)
+	//go OH.UpdateFloor(receiveFloors)
+
 	for {
 		//fmt.Println(timer.CheckTime(t))
 	}

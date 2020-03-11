@@ -303,7 +303,8 @@ func save_order_into_local_queue(floor int, button int) {
 
 //The new state machine
 type StateChannels struct {
-	OrderComplete  chan int
+	OrderComplete chan int
+	//OrderComplete  chan config.Keypress
 	ArrivedAtFloor chan int
 	//StateError 	chan error
 	NewOrder chan config.Keypress
@@ -323,52 +324,69 @@ func RunElevator(channel StateChannels) {
 	DoorTimer.Stop()
 	EngineFailureTimer.Stop()
 
-	orderCleared := false
+	//orderCleared := false
 
 	channel.Elevator <- elevator
 
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
+			/*
+				if newOrder.Completed {
+					elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
+					elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
+					//elevator.Queue[newOrder.Floor][elevio.BT_Cab] = false
+					orderCleared = true
 
-			if newOrder.Completed {
-				elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
-				elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
-				//elevator.Queue[newOrder.Floor][elevio.BT_Cab] = false
-				orderCleared = true
-
-			} else {
-				elevator.Queue[newOrder.Floor][newOrder.Btn] = true
-			}
-
+				} else {
+					elevator.Queue[newOrder.Floor][newOrder.Btn] = true
+				}
+			*/
+			elevator.Queue[newOrder.Floor][newOrder.Btn] = true
 			switch elevator.State {
 			case config.Idle:
 				elevator.Dir = chooseDirection(elevator)
+				elevio.SetMotorDirection(elevator.Dir)
 				if elevator.Dir == elevio.MD_Stop {
 					elevator.State = config.DoorOpen
 					elevio.SetDoorOpenLamp(true)
 					DoorTimer.Reset(3 * time.Second)
-					go func() { channel.OrderComplete <- newOrder.Floor }()
-					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{}
+					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
+					//channel.OrderComplete <- newOrder.Floor
+					//go func() { channel.OrderComplete <- newOrder.Floor }()
 
 				} else {
 					elevator.State = config.Moving
-					elevio.SetMotorDirection(elevator.Dir)
 					EngineFailureTimer.Reset(3 * time.Second)
 				}
 			case config.Moving:
 			case config.DoorOpen:
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
-					go func() { channel.OrderComplete <- newOrder.Floor }()
-					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{}
+					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
+					//channel.OrderComplete <- newOrder.Floor
 				}
 			case config.Undefined:
 				fmt.Println("fatal error")
 			}
+			//channel.Elevator <- elevator
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			fmt.Println("Arrived at floor")
+			if shouldMotorStop(elevator) {
+				//orderCleared = false
+				elevio.SetDoorOpenLamp(true)
+				EngineFailureTimer.Stop()
+				elevator.State = config.DoorOpen
+				elevio.SetMotorDirection(elevio.MD_Stop)
+				DoorTimer.Reset(3 * time.Second)
+				elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
+				//channel.OrderComplete <- elevator.Floor
+
+			} else if elevator.State == config.Moving {
+				EngineFailureTimer.Reset(3 * time.Second)
+			}
+			//channel.Elevator <- elevator
 
 		case <-DoorTimer.C:
 			elevio.SetDoorOpenLamp(false)
@@ -382,8 +400,33 @@ func RunElevator(channel StateChannels) {
 				elevio.SetMotorDirection(elevator.Dir)
 
 			}
-			channel.Elevator <- elevator
+			//channel.Elevator <- elevator
+		case <-EngineFailureTimer.C:
+			elevio.SetMotorDirection(elevio.MD_Stop)
+			elevator.State = config.Undefined
+			fmt.Println("Engine failure")
+			elevio.SetMotorDirection(elevator.Dir)
+			//channel.Elevator <- elevator
+			EngineFailureTimer.Reset(5 * time.Second)
+
 		}
 	}
 
+}
+
+func UpdateKeys(channel StateChannels, receiveOrder chan elevio.ButtonEvent, Floor chan int) {
+	for {
+		select {
+		case order := <-receiveOrder:
+			key := config.Keypress{
+				Floor:              order.Floor,
+				Btn:                order.Button,
+				DesignatedElevator: 1,
+				Completed:          false,
+			}
+			channel.NewOrder <- key
+		case floor := <-Floor:
+
+		}
+	}
 }
