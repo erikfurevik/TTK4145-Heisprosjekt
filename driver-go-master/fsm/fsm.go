@@ -330,16 +330,17 @@ func RunElevator(channel StateChannels) {
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
+
 			if newOrder.Completed {
 				elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
 				elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
-				//will also delete BT_Cab as well
-				elevator.Queue[newOrder.Floor][elevio.BT_Cab] = false
+				//elevator.Queue[newOrder.Floor][elevio.BT_Cab] = false
 				orderCleared = true
 
 			} else {
 				elevator.Queue[newOrder.Floor][newOrder.Btn] = true
 			}
+
 			switch elevator.State {
 			case config.Idle:
 				elevator.Dir = chooseDirection(elevator)
@@ -368,9 +369,20 @@ func RunElevator(channel StateChannels) {
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			fmt.Println("Arrived at floor")
-			
-		case <- DoorTimer.C:
-			
+
+		case <-DoorTimer.C:
+			elevio.SetDoorOpenLamp(false)
+			elevator.Dir = chooseDirection(elevator)
+			if elevator.Dir == elevio.MD_Stop {
+				elevator.State = config.Idle
+				EngineFailureTimer.Stop()
+			} else {
+				elevator.State = config.Moving
+				EngineFailureTimer.Reset(3 * time.Second)
+				elevio.SetMotorDirection(elevator.Dir)
+
+			}
+			channel.Elevator <- elevator
 		}
 	}
 
