@@ -333,6 +333,8 @@ func RunElevator(channel StateChannels) {
 			if newOrder.Completed {
 				elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
 				elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
+				//will also delete BT_Cab as well
+				elevator.Queue[newOrder.Floor][elevio.BT_Cab] = false
 				orderCleared = true
 
 			} else {
@@ -341,9 +343,34 @@ func RunElevator(channel StateChannels) {
 			switch elevator.State {
 			case config.Idle:
 				elevator.Dir = chooseDirection(elevator)
-				elevio.SetMotorDirection(elevator.Dir)
+				if elevator.Dir == elevio.MD_Stop {
+					elevator.State = config.DoorOpen
+					elevio.SetDoorOpenLamp(true)
+					DoorTimer.Reset(3 * time.Second)
+					go func() { channel.OrderComplete <- newOrder.Floor }()
+					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{}
 
+				} else {
+					elevator.State = config.Moving
+					elevio.SetMotorDirection(elevator.Dir)
+					EngineFailureTimer.Reset(3 * time.Second)
+				}
+			case config.Moving:
+			case config.DoorOpen:
+				if elevator.Floor == newOrder.Floor {
+					DoorTimer.Reset(3 * time.Second)
+					go func() { channel.OrderComplete <- newOrder.Floor }()
+					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{}
+				}
+			case config.Undefined:
+				fmt.Println("fatal error")
 			}
+
+		case elevator.Floor = <-channel.ArrivedAtFloor:
+			fmt.Println("Arrived at floor")
+			
+		case <- DoorTimer.C:
+			
 		}
 	}
 

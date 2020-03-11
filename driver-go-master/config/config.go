@@ -47,7 +47,7 @@ type Keypress struct {
 	Floor              int
 	Btn                elevio.ButtonType
 	DesignatedElevator int
-	Completed               bool
+	Completed          bool
 }
 
 type Elev struct {
