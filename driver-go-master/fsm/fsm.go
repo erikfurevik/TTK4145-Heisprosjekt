@@ -290,10 +290,6 @@ func FSM() {
 	}
 }
 
-func TEST() {
-	init_elevator()
-}
-
 //if the cost function desides that the order shouldbe taken locally, it sends in the floor and button to this function so that local queue can be updated
 func save_order_into_local_queue(floor int, button int) {
 	if check_if_different_order_is_already_saved_at_floor(floor, button) == 1 {
@@ -307,24 +303,25 @@ func save_order_into_local_queue(floor int, button int) {
 
 //The new state machine
 type StateChannels struct {
-	OrderComplete chan int
-	Elevator      chan config.Elev
-	//StateError 	chan error
-	NewOrder       chan config.Keypress
+	OrderComplete  chan int
 	ArrivedAtFloor chan int
+	//StateError 	chan error
+	NewOrder chan config.Keypress
+	Elevator chan config.Elev
 }
 
 func RunElevator(channel StateChannels) {
-	elevator := config.Elev {
-	State: 	config.idle
-	Dir: elevio.MD_Stop,
-	Floor: elevio.GetFloor()
+	elevator := config.Elev{
+		State: config.Idle,
+		Dir:   elevio.MD_Stop,
+		Floor: elevio.GetFloor(),
+		//Queue: [config.NumFloor][config.NumButtons]bool{},
 	}
 
 	DoorTimer := time.NewTimer(3 * time.Second)
-	EngineTimer := time.NewTimer(3 * time.Second)
+	EngineFailureTimer := time.NewTimer(3 * time.Second)
 	DoorTimer.Stop()
-	EngineTimer.Stop()
+	EngineFailureTimer.Stop()
 
 	orderCleared := false
 
@@ -333,7 +330,7 @@ func RunElevator(channel StateChannels) {
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
-			if newOrder.Done {
+			if newOrder.Completed {
 				elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
 				elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
 				orderCleared = true
@@ -342,7 +339,7 @@ func RunElevator(channel StateChannels) {
 				elevator.Queue[newOrder.Floor][newOrder.Btn] = true
 			}
 			switch elevator.State {
-			case config.idle:
+			case config.Idle:
 				elevator.Dir = chooseDirection(elevator)
 				elevio.SetMotorDirection(elevator.Dir)
 

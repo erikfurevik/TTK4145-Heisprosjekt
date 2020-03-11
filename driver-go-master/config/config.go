@@ -37,8 +37,8 @@ const (
 type ElevState int
 
 const (
-	Underfined ElevState = iota - 1
-	idle
+	Undefined ElevState = iota - 1
+	Idle
 	Moving
 	DoorOpen
 )
@@ -47,14 +47,14 @@ type Keypress struct {
 	Floor              int
 	Btn                elevio.ButtonType
 	DesignatedElevator int
-	Done               bool
+	Completed               bool
 }
 
 type Elev struct {
 	State ElevState
 	Dir   elevio.MotorDirection
 	Floor int
-	Queue [NumElevator][NumButtons]bool
+	Queue [NumFloor][NumButtons]bool
 }
 
 type AckList struct {
