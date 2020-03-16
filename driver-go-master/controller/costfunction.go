@@ -1,4 +1,4 @@
-package Order_handler
+package controller
 
 func costFunction(request Keypress, elevatorList [NumElevator]Elev, id int, elevatorOnline [NumElevator]bool) int {
     if order.Btn == elevio.BT_Cab {
