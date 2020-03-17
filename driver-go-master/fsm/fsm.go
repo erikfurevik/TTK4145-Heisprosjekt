@@ -11,7 +11,6 @@ import (
 type StateChannels struct {
 	OrderComplete chan int
 	ArrivedAtFloor chan int
-	//StateError 	chan error
 	NewOrder chan elevio.ButtonEvent
 	Elevator chan config.Elev
 }
@@ -124,7 +123,7 @@ func UpdateKeys(NewOrder chan config.Keypress, receiveOrder chan elevio.ButtonEv
 		select {
 		case order := <-receiveOrder:
 			key.Floor = order.Floor
-			key.Btn = order.Button
+			key.Button = order.Button
 			//fmt.Println(key.Floor)
 			NewOrder <- key
 
