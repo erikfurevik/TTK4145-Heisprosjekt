@@ -13,6 +13,7 @@ type StateChannels struct {
 	ArrivedAtFloor chan int
 	NewOrder chan elevio.ButtonEvent
 	Elevator chan config.Elev
+	DeleteNewOrder chan elevio.ButtonEvent
 }
 
 func RunElevator(channel StateChannels) {
@@ -33,16 +34,6 @@ func RunElevator(channel StateChannels) {
 		select {
 		case newOrder := <-channel.NewOrder:
 			fmt.Println("New order")
-			/*
-				if newOrder.Completed {
-					elevator.Queue[newOrder.Floor][elevio.BT_HallUp] = false
-					elevator.Queue[newOrder.Floor][elevio.BT_HallDown] = false
-					orderCleared = true
-
-				} else {
-					elevator.Queue[newOrder.Floor][newOrder.Button] = true
-				}
-			*/
 			elevator.Queue[newOrder.Floor][newOrder.Button] = true
 			switch elevator.State {
 			case config.Idle:
@@ -71,6 +62,8 @@ func RunElevator(channel StateChannels) {
 				fmt.Println("fatal error")
 			}
 			//channel.Elevator <- elevator
+		case deleteOrder := <- channel.DeleteNewOrder: //Backchannel to deletting orders
+			elevator.Queue[deleteOrder.Floor][deleteOrder.Button] = false 
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			if shouldMotorStop(elevator) {
