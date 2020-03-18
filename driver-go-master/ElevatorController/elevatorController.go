@@ -1,4 +1,4 @@
-package controller
+package ElevatorController
 
 import (
 	"../config"
@@ -22,6 +22,7 @@ type SyncChannels struct {
 //	ArrivedAtFloor chan int
 //	NewOrder chan elevio.ButtonEvent
 //	Elevator chan config.Elev
+//	DeleteNewOrder chan elevio.ButtonEvent
 //}
 
 
@@ -89,6 +90,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 				}
 			case newExternalOrder := <- SyncChan.ExternalOrderToLocal:
 				// we receive an order from abroad
+				//elevList[Local_ID].Queue[newExternalOrder.Floor][newExternalOrder.Button] = true
 				TempButtonEventOrder.Button = newExternalOrder.Button
 				TempButtonEventOrder.Floor = newExternalOrder.Floor
 				go func() {LocalStateChannel.NewOrder <- TempButtonEventOrder} () //send order local
@@ -100,21 +102,70 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 				elevList[Local_ID] = NewUpdateLocalElevator //update info about elevator
 				//elevList[Local_ID].Queue = elevList[Local_ID].
 				go func() {UpdateLight <- elevList} ()//update lights
-
 				if OnlineList[Local_ID] {
 					SyncChan.LocalElevatorToExternal <- elevList[Local_ID]
 				}
 
 
-			case Floor := <- LocalStateChannel.OrderComplete: 
+			case completeOrder.Floor = <- LocalStateChannel.OrderComplete: 
 				//an order is complete from the local fsm
-				elevList[Local_ID].Queue[Floor] = [3]bool{false}
-				go func() {UpdateLight <- elevList} ()//update lights
+				//update the the other elevators as well
+
+				//Delete the orderer finished from all elevtors
+				for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
+					if elevList[Local_ID].Queue[completeOrder.Floor][button] {
+						completeOrder.Button = button
+					}
+					for elevator := 0; elevator < config.NumElevator; elevator++ {
+						if button != elevio.BT_Cab || elevator == Local_ID {
+							elevList[elevator].Queue[completeOrder.Floor][button] = false
+						}
+					}
+				}
+
+				if OnlineList[Local_ID]{
+					SyncChan.LocalElevatorToExternal <- elevList[Local_ID]
+				}
+				go func() {UpdateLight <- elevList} () //update lights
 
 
 			case tempElevatorArray := <-SyncChan.UpdateMainLogic:
 				//The update from the other elevators about their state, queue, motor direction etc
-			
+				change := false
+				//The part we update external elevators
+				for elevator := 0; elevator < config.NumElevator; elevator++ {
+					if elevator == Local_ID {
+						continue
+					}
+					if elevList[elevator].Queue != tempElevatorArray[elevator].Queue {
+						change = true
+					}
+					elevList[elevator] = tempElevatorArray[elevator] //Se if there are any chagnes. Save the updated elevators
+				}
+				//The part we update our own elevator
+				for floor := 0; floor < config.NumFloor; floor++{
+					for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+						//Our local didnt have an order before, but it does now
+						if tempElevatorArray[Local_ID].Queue[floor][button] && !elevList[Local_ID].Queue[floor][button] { 
+							//then we update the Q matrix for our local elevator
+							elevList[Local_ID].Queue[floor][button] = true
+							order := elevio.ButtonEvent{Floor: floor, Button: button}
+							go func() { LocalStateChannel.NewOrder <- order }()
+							//If our local had order previously but it does not have it now
+							change = true
+						}else if !tempElevatorArray[Local_ID].Queue[floor][button] && elevList[Local_ID].Queue[floor][button]{
+							elevList[Local_ID].Queue[floor][button] = false
+							order := elevio.ButtonEvent{Floor: floor, Button: button}
+							go func() { LocalStateChannel.DeleteNewOrder <- order }()
+							change = true
+						}
+					}
+
+				}
+				if change {
+					UpdateLight <- elevList
+				}
+
 
 			case OnlineList = <- SyncChan.OnlineElevators:
 				//The online states of the elevators
