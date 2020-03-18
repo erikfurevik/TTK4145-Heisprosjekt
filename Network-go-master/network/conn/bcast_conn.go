@@ -1,5 +1,11 @@
 // +build !windows
 
+//Denne modulen er hentet rett fra utdelt nettverk, så det må kommenteres i readMe.
+//Kommentarer herifra og ned skal fjernes, men kommenterer litt slik at det er lett å finne frem senere
+
+//Er vel bare å drite i det med å få til å kjøre nettverket på windows? Programmet skal vel uansett testes over linux systemer
+//og er vel ikke akkurat noe krav om å kjøre det på windows?
+
 package conn
 
 import (

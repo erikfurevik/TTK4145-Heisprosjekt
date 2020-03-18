@@ -1,11 +1,14 @@
+//Denne modulen er hentet rett fra utdelt nettverk, så det må kommenteres i readMe.
+//Kommentarer skal fjernes, men kommenterer litt slik at det er lett å finne frem senere
 package peers
 
 import (
-	"../conn"
 	"fmt"
 	"net"
 	"sort"
 	"time"
+
+	"../conn"
 )
 
 type PeerUpdate struct {

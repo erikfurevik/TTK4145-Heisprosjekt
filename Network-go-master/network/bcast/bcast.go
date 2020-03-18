@@ -1,12 +1,15 @@
+//Denne modulen er hentet rett fra utdelt nettverk (line 52-54 er lagt til!), så det må kommenteres i readMe.
+//Engelske kommentarer står fra før
 package bcast
 
 import (
-	"../conn"
 	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
 	"strings"
+
+	"../conn"
 )
 
 // Encodes received values from `chans` into type-tagged JSON, then broadcasts
