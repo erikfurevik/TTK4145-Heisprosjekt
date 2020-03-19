@@ -58,7 +58,7 @@ type Elev struct {
 }
 
 type AckList struct {
-	DesignatedElevator int
+	ElevatorID		   int
 	ImplicitAcks       [NumElevator]Acknowledge
 }
 

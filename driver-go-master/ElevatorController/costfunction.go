@@ -4,21 +4,14 @@ import (
     "../config"
 	"../elevio"
 )
-
+//Likewise if the 
 func costFunction(Local_ID int, LocalOrder elevio.ButtonEvent, elevatorList [config.NumElevator]config.Elev, elevatorOnline [config.NumElevator]bool) int {
     if LocalOrder.Button == elevio.BT_Cab {
         return Local_ID
     }
-
-    minCost := config.NumButtons*config.NumFloor*config.NumElevator
-    bestElev := Local_ID
-    var secondBest int 
+    var CostArray[config.NumElevator]int
 
     for elev := 0; elev < config.NumElevator; elev++ {
-        if !elevatorOnline[elev] {
-            continue
-        }
-        secondBest = elev
         cost := LocalOrder.Floor - elevatorList[elev].Floor
         if cost == 0 && elevatorList[elev].State != config.Moving {
             return elev
@@ -41,15 +34,20 @@ func costFunction(Local_ID int, LocalOrder elevio.ButtonEvent, elevatorList [con
 
         if elevatorList[elev].State == config.DoorOpen {
             cost ++
+        
         }
-        if cost < minCost {
-            minCost = cost
+        CostArray[elev] = cost
+    }
+
+    maxCost := 1000;
+    var bestElev int
+    for elev := 0; elev < config.NumElevator; elev++{
+        // if elevator is online and its state is not in undefined
+        if CostArray[elev] < maxCost && elevatorOnline[elev] && elevatorList[elev].State != config.Undefined{
             bestElev = elev
         }
-    }
-    if bestElev == Local_ID && elevatorOnline[Local_ID] == false {
-        return secondBest
-    }else{
-        return bestElev
-    }
+    } 
+
+    return bestElev
+    
 }
