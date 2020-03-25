@@ -20,6 +20,7 @@ type PeerUpdate struct {
 const interval = 15 * time.Millisecond
 const timeout = 500 * time.Millisecond
 
+//Transmitter id for å si at man er på nettet
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
 
 	conn := conn.DialBroadcastUDP(port)
@@ -36,7 +37,7 @@ func Transmitter(port int, id string, transmitEnable <-chan bool) {
 		}
 	}
 }
-
+//Sjekker om det har kommet noen nye på nettet, eller om vi har mistet noen
 func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 
 	var buf [1024]byte
