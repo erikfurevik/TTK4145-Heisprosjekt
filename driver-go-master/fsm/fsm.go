@@ -27,13 +27,11 @@ func RunElevator(channel StateChannels) {
 	DoorTimer.Stop()
 	EngineFailureTimer.Stop()
 
-	//orderCleared := false
-	//channel.Elevator <- elevator
+	channel.Elevator <- elevator
 
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
-			fmt.Println("New order")
 			elevator.Queue[newOrder.Floor][newOrder.Button] = true
 			switch elevator.State {
 			case config.Idle:
@@ -44,8 +42,7 @@ func RunElevator(channel StateChannels) {
 					elevio.SetDoorOpenLamp(true)
 					DoorTimer.Reset(3 * time.Second)
 					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
-					//channel.OrderComplete <- newOrder.Floor
-					//go func() { channel.OrderComplete <- newOrder.Floor }()
+
 
 				} else {
 					elevator.State = config.Moving
@@ -56,30 +53,28 @@ func RunElevator(channel StateChannels) {
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
 					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
-					//channel.OrderComplete <- newOrder.Floor
+
 				}
 			case config.Undefined:
 				fmt.Println("fatal error")
 			}
-			//channel.Elevator <- elevator
-		case deleteOrder := <- channel.DeleteNewOrder: //Backchannel to deletting orders
+			channel.Elevator <- elevator
+		case deleteOrder := <- channel.DeleteNewOrder:
 			elevator.Queue[deleteOrder.Floor][deleteOrder.Button] = false 
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			if shouldMotorStop(elevator) {
-				//orderCleared = false
 				elevio.SetDoorOpenLamp(true)
 				EngineFailureTimer.Stop()
 				elevator.State = config.DoorOpen
 				elevio.SetMotorDirection(elevio.MD_Stop)
 				DoorTimer.Reset(3 * time.Second)
 				elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
-				//channel.OrderComplete <- elevator.Floor
 
 			} else if elevator.State == config.Moving {
 				EngineFailureTimer.Reset(3 * time.Second)
 			}
-			//channel.Elevator <- elevator
+			channel.Elevator <- elevator
 
 		case <-DoorTimer.C:
 			elevio.SetDoorOpenLamp(false)
@@ -91,16 +86,14 @@ func RunElevator(channel StateChannels) {
 				elevator.State = config.Moving
 				EngineFailureTimer.Reset(3 * time.Second)
 				elevio.SetMotorDirection(elevator.Dir)
-
 			}
-			//channel.Elevator <- elevator
+			channel.OrderComplete <- elevator.Floor
+			channel.Elevator <- elevator
 		case <-EngineFailureTimer.C:
-			//elevio.SetMotorDirection(elevio.MD_Stop)
 			elevator.State = config.Undefined
 			fmt.Println("Engine failure")
-			//elevio.SetMotorDirection(elevator.Dir)
-			//channel.Elevator <- elevator
 			EngineFailureTimer.Reset(5 * time.Second)
+			channel.Elevator <- elevator
 
 		}
 	}

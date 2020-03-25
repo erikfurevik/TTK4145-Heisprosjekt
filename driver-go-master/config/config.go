@@ -6,8 +6,9 @@ import (
 
 const (
 	NumFloor    int = 4
-	NumElevator int = 3
+	NumElevator int = 2
 	NumButtons  int = 3
+	//LocalID 	int = 0;
 )
 
 /*type ButtonType int AKA Button
