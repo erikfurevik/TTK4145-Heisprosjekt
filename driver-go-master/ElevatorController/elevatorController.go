@@ -106,13 +106,13 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 								TempButtonEvent= elevio.ButtonEvent{Floor: floor, Button: button}
 								costID := costFunction(Local_ID, TempButtonEvent, elevList, OnlineList)
 								TempKeyOrder = config.Keypress{Floor: floor, Button: button, DesignatedElevator: costID}
-								elevList[Local_ID].Queue[floor][button] = false
+								//elevList[Local_ID].Queue[floor][button] = false
+								NewUpdateLocalElevator.Queue[floor][button] = false
 								SyncChan.LocalOrderToExternal <- TempKeyOrder //send order external
 							}
 						}
 					}
 				}
-				NewUpdateLocalElevator.Queue = elevList[Local_ID].Queue
 				elevList[Local_ID] = NewUpdateLocalElevator //update info about elevator
 				UpdateLight <- elevList//update lights
 				if OnlineList[Local_ID] {
