@@ -99,7 +99,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 
 			case NewUpdateLocalElevator := <- LocalStateChannel.Elevator:
 				//Update about our new local elevator
-				fmt.Println("Update of local elevator:",Local_ID)
 				if elevList[Local_ID].State != config.Undefined && NewUpdateLocalElevator.State == config.Undefined{ //i am undefiend now
 					for floor := 0; floor < config.NumFloor; floor++{
 						for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{
