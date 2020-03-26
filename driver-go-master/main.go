@@ -80,8 +80,9 @@ func runParallel(LocalID int, localhost string){
 
 }
 
+
 func main() {
-	go runParallel(0, "localhost:15555")
+	go runParallel(0, "localhost:20000")
 	go runParallel(1, "localhost:15000")
 
 	for {
