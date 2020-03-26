@@ -16,13 +16,12 @@ import (
 )
 
 
-func runParallel(LocalID int, localhost string){
-
-}
-
-
 func main() {
-	//localhost:20000
+	// For å kjøre koden må du først skrive "run go main.go" som vanlig så må du spesifisere IDen til heisen og hvilke port den skal kobles til
+	// på simulatoren
+	//eksempel kode: go run main.go 0 15000
+	//koden kjører med id = 0 og port = 15000
+	 
 	LocalIDString := os.Args[1]
 	localhost := "localhost:" + os.Args[2]
 	LocalID,err := strconv.Atoi(LocalIDString)
