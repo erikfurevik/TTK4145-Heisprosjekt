@@ -2,8 +2,9 @@ package main
 
 import (
 	//"fmt"
-	//"strconv"
+	"strconv"
 	//"time"
+	"os"
 
 	"./config"
 	"./elevio"
@@ -16,11 +17,22 @@ import (
 
 
 func runParallel(LocalID int, localhost string){
+
+}
+
+
+func main() {
+	//localhost:20000
+	LocalIDString := os.Args[1]
+	localhost := "localhost:" + os.Args[2]
+	LocalID,err := strconv.Atoi(LocalIDString)
+
+	if err != nil {
+		panic(err.Error())
+	}
+	
 	//defualt := "localhost:15657"
-
 	elevio.Init(localhost, config.NumFloor)
-
-
 	channels := fsm.StateChannels{
 		OrderComplete:  make(chan int),
 		Elevator:       make(chan config.Elev),
@@ -56,8 +68,8 @@ func runParallel(LocalID int, localhost string){
 
 
 	//id_string := strconv.Itoa(LocalID)
-	msgpPort := 42034 //Har bare valgt en random port for å teste kode.
-	orderPort := 42035
+	msgpPort := 42030 //Har bare valgt en random port for å teste kode.
+	orderPort := 42050
 
 	go elevio.PollButtons(newOrder)
 	go elevio.PollFloorSensor(channels.ArrivedAtFloor)
@@ -78,15 +90,8 @@ func runParallel(LocalID int, localhost string){
 	//go peers.Transmitter(port, id_string, enableTx) 
 	//go peers.Receiver(port, peerUpdate)             
 
-}
-
-
-func main() {
-	go runParallel(0, "localhost:20000")
-	go runParallel(1, "localhost:15000")
-
-	for {
-
+	for{ 
 	}
-
 }
+
+	

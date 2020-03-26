@@ -27,7 +27,7 @@ func RunElevator(channel StateChannels) {
 	DoorTimer.Stop()
 	EngineFailureTimer.Stop()
 
-	channel.Elevator <- elevator
+	//channel.Elevator <- elevator
 
 	for {
 		select {

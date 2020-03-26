@@ -8,6 +8,7 @@ import (
 	//bcast "../network/bcast"
 	//"strconv"
 	"time"
+	"fmt"
 )
 
 
@@ -73,17 +74,21 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		case newElev := <- channel.LocalElevatorToExternal: //update of our elevator
 			msg.Elevator[Local_ID] = newElev //update message struct
 			channel.OutgoingMsg <- msg
+			fmt.Println("send local elevator state")
 
 		case ExternalOrder := <- channel.LocalOrderToExternal: //get order from controller
 			channel.OutgoingOrder <- ExternalOrder //send it over the network
+			fmt.Println("send local order to abroad")
 
 		case inOrder := <- channel.IncomingOrder: //order from network
 			channel.ExternalOrderToLocal <- inOrder
 		
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
-			msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
-			channel.UpdateMainLogic <- msg.Elevator //update elevator controller about the other elevators
-
+			if inMSG.ID != Local_ID{
+				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
+				channel.UpdateMainLogic <- msg.Elevator //update elevator controller about the other elevators
+				fmt.Println("receive external elevator:",inMSG.ID)
+			}
 		}
 	}
 }
