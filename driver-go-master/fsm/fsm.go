@@ -27,6 +27,7 @@ func RunElevator(channel StateChannels) {
 	EngineFailureTimer := time.NewTimer(3 * time.Second)
 	DoorTimer.Stop()
 	EngineFailureTimer.Stop()
+	updateExternal := false
 
 	//channel.Elevator <- elevator
 
@@ -47,9 +48,9 @@ func RunElevator(channel StateChannels) {
 
 				} else {
 					elevator.State = config.Moving
-					EngineFailureTimer.Reset(3 * time.Second)
+					EngineFailureTimer.Reset(3 * time.Hour)
 				}
-			//case config.Moving:
+				updateExternal = true
 			case config.DoorOpen:
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
@@ -59,13 +60,12 @@ func RunElevator(channel StateChannels) {
 			case config.Undefined:
 				fmt.Println("fatal error")
 			}
-			channel.Elevator <- elevator
+			
 		case deleteOrder := <- channel.DeleteNewOrder:
 			elevator.Queue[deleteOrder.Floor][deleteOrder.Button] = false 
 		
 		case deleteQueue := <- channel.DeleteQueue:
 			elevator.Queue = deleteQueue
-			channel.Elevator <- elevator
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			if shouldMotorStop(elevator) {
@@ -77,10 +77,9 @@ func RunElevator(channel StateChannels) {
 				elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
 
 			} else if elevator.State == config.Moving {
-				EngineFailureTimer.Reset(3 * time.Second)
+				EngineFailureTimer.Reset(3 * time.Hour)
 			}
-			channel.Elevator <- elevator
-
+			updateExternal = true
 		case <-DoorTimer.C:
 			elevio.SetDoorOpenLamp(false)
 			elevator.Dir = chooseDirection(elevator)
@@ -89,17 +88,21 @@ func RunElevator(channel StateChannels) {
 				EngineFailureTimer.Stop()
 			} else {
 				elevator.State = config.Moving
-				EngineFailureTimer.Reset(3 * time.Second)
+				EngineFailureTimer.Reset(3 * time.Hour)
 				elevio.SetMotorDirection(elevator.Dir)
 			}
 			channel.OrderComplete <- elevator.Floor
-			channel.Elevator <- elevator
+			updateExternal = true
 		case <-EngineFailureTimer.C:
 			elevator.State = config.Undefined
 			fmt.Println("Engine failure")
 			EngineFailureTimer.Reset(5 * time.Second)
-			channel.Elevator <- elevator
+			updateExternal = true
 
+		}
+		if updateExternal{
+			channel.Elevator <- elevator
+			updateExternal = false
 		}
 	}
 
