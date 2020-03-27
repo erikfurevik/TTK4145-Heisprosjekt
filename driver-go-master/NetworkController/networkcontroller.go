@@ -81,7 +81,9 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 			fmt.Println("send local order to abroad")
 
 		case inOrder := <- channel.IncomingOrder: //order from network
+		if inOrder.DesignatedElevator != Local_ID {
 			channel.ExternalOrderToLocal <- inOrder
+		}
 		
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
 			if inMSG.ID != Local_ID{
