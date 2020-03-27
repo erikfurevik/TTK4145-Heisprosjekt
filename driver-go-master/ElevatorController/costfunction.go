@@ -15,7 +15,7 @@ func costFunction(Local_ID int, LocalOrder elevio.ButtonEvent, elevatorList [con
     for elev := 0; elev < config.NumElevator; elev++ {
         cost := LocalOrder.Floor - elevatorList[elev].Floor
 
-        if cost == 0 && elevatorList[elev].State != config.Moving {
+        if cost == 0 && elevatorList[elev].State != config.Moving && elevatorList[elev].State != config.Undefined && elevatorOnline[elev]  {
             return elev
         }
         

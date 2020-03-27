@@ -14,6 +14,7 @@ type StateChannels struct {
 	NewOrder chan elevio.ButtonEvent
 	Elevator chan config.Elev
 	DeleteNewOrder chan elevio.ButtonEvent
+	DeleteQueue chan [config.NumFloor][config.NumButtons] bool 
 }
 
 func RunElevator(channel StateChannels) {
@@ -61,6 +62,10 @@ func RunElevator(channel StateChannels) {
 			channel.Elevator <- elevator
 		case deleteOrder := <- channel.DeleteNewOrder:
 			elevator.Queue[deleteOrder.Floor][deleteOrder.Button] = false 
+		
+		case deleteQueue := <- channel.DeleteQueue:
+			elevator.Queue = deleteQueue
+			channel.Elevator <- elevator
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			if shouldMotorStop(elevator) {

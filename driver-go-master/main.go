@@ -37,6 +37,8 @@ func main() {
 		Elevator:       make(chan config.Elev),
 		NewOrder:       make(chan elevio.ButtonEvent),
 		ArrivedAtFloor: make(chan int),
+		DeleteNewOrder: make(chan elevio.ButtonEvent),
+		DeleteQueue:	make(chan [config.NumFloor][config.NumButtons] bool),
 	}
 
 	network := nc.NetworkChannels{
