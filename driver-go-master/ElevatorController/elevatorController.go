@@ -43,7 +43,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			TempButtonEvent elevio.ButtonEvent			//Helper struct to convert between ButonEvent and Keypress
 
 		)
-		OnlineList = [config.NumElevator]bool {true}
+		OnlineList = [config.NumElevator]bool {true, true}
 		fmt.Println("starting mainlogic function:", Local_ID)
 
 
