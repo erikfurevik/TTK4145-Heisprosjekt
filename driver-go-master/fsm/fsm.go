@@ -47,7 +47,7 @@ func RunElevator(channel StateChannels) {
 
 				} else {
 					elevator.State = config.Moving
-					EngineFailureTimer.Reset(3 * time.Hour)
+					EngineFailureTimer.Reset(3 * time.Second)
 				}
 				updateExternal = true
 			
@@ -87,7 +87,7 @@ func RunElevator(channel StateChannels) {
 
 				}
 			} else if elevator.State == config.Moving {
-				EngineFailureTimer.Reset(3 * time.Hour)
+				EngineFailureTimer.Reset(3 * time.Second)
 			}
 			updateExternal = true
 		case <-DoorTimer.C:
@@ -98,7 +98,7 @@ func RunElevator(channel StateChannels) {
 				EngineFailureTimer.Stop()
 			} else {
 				elevator.State = config.Moving
-				EngineFailureTimer.Reset(3 * time.Hour)
+				EngineFailureTimer.Reset(3 * time.Second)
 				elevio.SetMotorDirection(elevator.Dir)
 			}
 			//channel.OrderComplete <- elevator.Floor

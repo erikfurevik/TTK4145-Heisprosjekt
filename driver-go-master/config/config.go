@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	NumFloor    int = 6
-	NumElevator int = 2
+	NumFloor    int = 4
+	NumElevator int = 4
 	NumButtons  int = 3
 	//LocalID 	int = 0;
 )
@@ -65,6 +65,6 @@ type AckList struct {
 
 type Message struct {
 	Elevator         [NumElevator]Elev
-	RegisteredOrders [NumFloor][NumButtons - 1]AckList
+	//RegisteredOrders [NumFloor][NumButtons - 1]AckList
 	ID               int
 }

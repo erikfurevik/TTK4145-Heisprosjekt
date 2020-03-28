@@ -46,6 +46,7 @@ func shouldMotorStop(elevator config.Elev) bool {
 			elevator.Queue[elevator.Floor][elevio.BT_Cab] ||
 			!orderBelow(elevator)
 	case elevio.MD_Stop:
+		return true
 	default:
 	}
 	return false

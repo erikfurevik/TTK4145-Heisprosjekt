@@ -74,7 +74,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		case newElev := <- channel.LocalElevatorToExternal: //update of our elevator
 			msg.Elevator[Local_ID] = newElev //update message struct
 			channel.OutgoingMsg <- msg
-			//fmt.Println("send local elevator state")
+			//fmt.Println("send local elevator state: ", Local_ID)
 
 		case ExternalOrder := <- channel.LocalOrderToExternal: //get order from controller
 			channel.OutgoingOrder <- ExternalOrder //send it over the network
@@ -86,10 +86,11 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		}
 		
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
+		fmt.Println(inMSG.ID)
 			if inMSG.ID != Local_ID{
 				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
 				channel.UpdateMainLogic <- msg.Elevator //update elevator controller about the other elevators
-				fmt.Println("receive external elevator:", inMSG.ID)
+				//fmt.Println("receive external elevator:", inMSG.ID)
 			}
 		}
 	}
