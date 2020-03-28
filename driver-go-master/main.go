@@ -69,8 +69,9 @@ func main() {
 
 
 	//id_string := strconv.Itoa(LocalID)
-	msgpPort := 42030 //Har bare valgt en random port for å teste kode.
-	orderPort := 42050
+	msgpPort := 42030 //Port for å sende stats
+	orderPort := 42050 //Port for å sende ordre
+	//peersPort := 42056 //Port for peers on network
 
 	go elevio.PollButtons(newOrder)
 	go elevio.PollFloorSensor(channels.ArrivedAtFloor)

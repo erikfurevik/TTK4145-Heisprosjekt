@@ -45,12 +45,15 @@ func RunElevator(channel StateChannels) {
 					DoorTimer.Reset(3 * time.Second)
 					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
 
-
 				} else {
 					elevator.State = config.Moving
 					EngineFailureTimer.Reset(3 * time.Hour)
 				}
 				updateExternal = true
+			
+			case config.Moving:
+				updateExternal = true
+
 			case config.DoorOpen:
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
@@ -63,19 +66,24 @@ func RunElevator(channel StateChannels) {
 			
 		case deleteOrder := <- channel.DeleteNewOrder:
 			elevator.Queue[deleteOrder.Floor][deleteOrder.Button] = false 
-		
+
 		case deleteQueue := <- channel.DeleteQueue:
 			elevator.Queue = deleteQueue
 
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			if shouldMotorStop(elevator) {
-				elevio.SetDoorOpenLamp(true)
 				EngineFailureTimer.Stop()
-				elevator.State = config.DoorOpen
 				elevio.SetMotorDirection(elevio.MD_Stop)
-				DoorTimer.Reset(3 * time.Second)
-				elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
+				if !orderAtFloor(elevator){
+					elevator.State = config.Idle
+					DoorTimer.Reset(3 * time.Millisecond)
+				}else {
+					elevio.SetDoorOpenLamp(true)
+					elevator.State = config.DoorOpen
+					DoorTimer.Reset(3 * time.Second)
+					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
 
+				}
 			} else if elevator.State == config.Moving {
 				EngineFailureTimer.Reset(3 * time.Hour)
 			}
@@ -91,21 +99,19 @@ func RunElevator(channel StateChannels) {
 				EngineFailureTimer.Reset(3 * time.Hour)
 				elevio.SetMotorDirection(elevator.Dir)
 			}
-			channel.OrderComplete <- elevator.Floor
+			//channel.OrderComplete <- elevator.Floor
 			updateExternal = true
 		case <-EngineFailureTimer.C:
 			elevator.State = config.Undefined
 			fmt.Println("Engine failure")
 			EngineFailureTimer.Reset(5 * time.Second)
 			updateExternal = true
-
 		}
 		if updateExternal{
 			channel.Elevator <- elevator
 			updateExternal = false
 		}
 	}
-
 }
 
 //UpdateKeys ..

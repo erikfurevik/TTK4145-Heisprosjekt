@@ -54,14 +54,33 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			case NewUpdateLocalElevator := <- LocalStateChannel.Elevator:
 				//Update about our new local elevator
 				change := false
+				for floor := 0; floor < config.NumFloor; floor++{
+					for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+						if elevList[Local_ID].Queue[floor][button] && !NewUpdateLocalElevator.Queue[floor][button]{
+							change = true
+						}
+					}
+					if change {
+						change = false
+						for id := 0; id < config.NumElevator; id++{
+							if id != Local_ID{
+								elevList[id].Queue[floor][elevio.BT_HallUp] = false
+								elevList[id].Queue[floor][elevio.BT_HallDown] = false
+							}	
+						}
+					}
+				}		
+									
+				change = false
+				//i will have to test this further with more elevators
 				if elevList[Local_ID].State != config.Undefined && NewUpdateLocalElevator.State == config.Undefined{ //i am undefiend now
+					elevList[Local_ID].State = config.Undefined //update that we are undefined
 					for floor := 0; floor < config.NumFloor; floor++{
-						for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{
-							if elevList[Local_ID].Queue[floor][button]{
+						for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{//distribute all orders except cab
+							if NewUpdateLocalElevator.Queue[floor][button]{
 								TempButtonEvent= elevio.ButtonEvent{Floor: floor, Button: button}
 								costID := costFunction(Local_ID, TempButtonEvent, elevList, OnlineList)
 								TempKeyOrder = config.Keypress{Floor: floor, Button: button, DesignatedElevator: costID}
-								//elevList[Local_ID].Queue[floor][button] = false
 								elevList[costID].Queue[floor][button] = true
 								NewUpdateLocalElevator.Queue[floor][button] = false
 								SyncChan.LocalOrderToExternal <- TempKeyOrder //send order external
@@ -81,44 +100,46 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 
 
 			case TempKeyOrder.Floor = <- LocalStateChannel.OrderComplete: 
-				//an order is complete from the local fsm
-				fmt.Println("order completed:",Local_ID)
-				//Delete the finisehd Hall Button orders from all elevators
-				for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
-					if elevList[Local_ID].Queue[TempKeyOrder.Floor][button] {
-						TempKeyOrder.Button = button
-					}
-					for elevator := 0; elevator < config.NumElevator; elevator++ {
-						if button != elevio.BT_Cab || elevator == Local_ID {
-							elevList[elevator].Queue[TempKeyOrder.Floor][button] = false
-						}
-					}
-				}
-				UpdateLight <- elevList //update lights
+				////an order is complete from the local fsm
+				//fmt.Println("order completed:",Local_ID)
+				////Delete the finisehd Hall Button orders from all elevators
+				//for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
+				//	if elevList[Local_ID].Queue[TempKeyOrder.Floor][button] {
+				//		TempKeyOrder.Button = button
+				//	}
+				//	for elevator := 0; elevator < config.NumElevator; elevator++ {
+				//		if button != elevio.BT_Cab || elevator == Local_ID {
+				//			elevList[elevator].Queue[TempKeyOrder.Floor][button] = false
+				//		}
+				//	}
+				//}
+				//UpdateLight <- elevList //update lights
 				
-
-
 			case tempElevatorArray := <-SyncChan.UpdateMainLogic:
 				//The update from the other elevators about their state, queue, motor direction etc
 				change := false
-				//If previousl Hall Order is completed by another elevator, Delete that order from our fsm as well
-				for floor := 0; floor < config.NumFloor; floor++{
-					for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{
-						if elevList[Local_ID].Queue[floor][button]{
-							for id := 0; id < config.NumElevator; id++ {
-								if id != Local_ID {
-									if elevList[id].Queue[floor][button] && !tempElevatorArray[id].Queue[floor][button]{
-										elevList[Local_ID].Queue[floor][button] = false
-										change = true
-									}
+				tempQueue := elevList[Local_ID].Queue
+				for id := 0; id < config.NumElevator; id++ {
+					if id != Local_ID {
+						for floor := 0; floor < config.NumFloor; floor++{
+							for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+								if elevList[id].Queue[floor][button] && !tempElevatorArray[id].Queue[floor][button] {
+									change = true
 								}
 							}
+							if change {
+								change = false
+								tempQueue[floor][elevio.BT_HallUp] = false
+								tempQueue[floor][elevio.BT_HallDown] = false
+							}	
 						}
 					}
 				}
-				if change{
+				if tempQueue != elevList[Local_ID].Queue {
+					elevList[Local_ID].Queue = tempQueue
 					LocalStateChannel.DeleteQueue <- elevList[Local_ID].Queue
 				}
+
 				for id := 0; id < config.NumElevator; id++ {
 					if id == Local_ID {
 						continue
@@ -130,6 +151,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 
 			case NewOnlineList := <- SyncChan.OnlineElevators:
 				//if another elevator goes offline
+				//This i will have to be testet properly
 				for id := 0; id < config.NumElevator; id++{
 					if id != Local_ID && OnlineList[id] && !NewOnlineList[id]{
 						for floor := 0; floor < config.NumFloor; floor++ {

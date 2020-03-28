@@ -26,6 +26,14 @@ func orderBelow(elevator config.Elev) bool {
 	}
 	return false
 }
+func orderAtFloor(elevator config.Elev)bool{
+	for button := 0; button < config.NumButtons; button++{
+		if elevator.Queue[elevator.Floor][button]{
+			return true
+		}
+	}
+	return false
+}
 
 func shouldMotorStop(elevator config.Elev) bool {
 	switch elevator.Dir {
