@@ -58,8 +58,10 @@ func RunElevator(channel StateChannels) {
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
 					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
-
+				}else{
+					updateExternal = true
 				}
+				
 			case config.Undefined:
 				fmt.Println("fatal error")
 			}

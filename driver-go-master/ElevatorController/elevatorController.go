@@ -23,7 +23,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			TempButtonEvent elevio.ButtonEvent			//Helper struct to convert between ButonEvent and Keypress
 
 		)
-		OnlineList = [config.NumElevator]bool {true, true}
+		OnlineList = [config.NumElevator]bool {true,true}
 		fmt.Println("starting mainlogic function:", Local_ID)
 
 
@@ -32,6 +32,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			case newLocalOrder := <- HardwareToControl:
 
 				id := costFunction(Local_ID, newLocalOrder, elevList, OnlineList)
+				id = Local_ID
 				if id == Local_ID {
 					LocalStateChannel.NewOrder <- newLocalOrder //send order local
 				}else {
