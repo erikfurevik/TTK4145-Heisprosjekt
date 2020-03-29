@@ -29,6 +29,9 @@ func RunElevator(channel StateChannels) {
 	EngineFailureTimer.Stop()
 	updateExternal := false
 
+	//var newOrder config.ButtonEvent
+	//TakeOrderTimer := := time.NewTimer(3 * time.Second)
+
 	//channel.Elevator <- elevator
 
 	for {

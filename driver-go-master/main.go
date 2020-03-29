@@ -34,11 +34,11 @@ func main() {
 	elevio.Init(localhost, config.NumFloor)
 	channels := fsm.StateChannels{
 		OrderComplete:  make(chan int),
-		Elevator:       make(chan config.Elev),
-		NewOrder:       make(chan elevio.ButtonEvent),
+		Elevator:       make(chan config.Elev, 10),
+		NewOrder:       make(chan elevio.ButtonEvent, 10),
 		ArrivedAtFloor: make(chan int),
 		DeleteNewOrder: make(chan elevio.ButtonEvent),
-		DeleteQueue:	make(chan [config.NumFloor][config.NumButtons] bool),
+		DeleteQueue:	make(chan [config.NumFloor][config.NumButtons] bool, 10),
 	}
 
 	network := nc.NetworkChannels{
@@ -57,7 +57,7 @@ func main() {
 	PeerTxEnable:    			make(chan bool),				
 
 	//network to network controller
-	IncomingMsg:     			make(chan config.Message),			
+	IncomingMsg:     			make(chan config.Message, 30),			
 	IncomingOrder: 				make(chan config.Keypress),		
 	PeerUpdate:     	 		make(chan peers.PeerUpdate),
 	} 

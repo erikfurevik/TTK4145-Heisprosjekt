@@ -23,7 +23,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			TempButtonEvent elevio.ButtonEvent			//Helper struct to convert between ButonEvent and Keypress
 
 		)
-		OnlineList = [config.NumElevator]bool {true}
+		OnlineList = [config.NumElevator]bool {true, true, true }
 		fmt.Println("starting mainlogic function:", Local_ID)
 
 
@@ -32,14 +32,12 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			case newLocalOrder := <- HardwareToControl:
 
 				id := costFunction(Local_ID, newLocalOrder, elevList, OnlineList)
-				//if id == Local_ID {
-				//	go func() {LocalStateChannel.NewOrder <- newLocalOrder} () //send order local
-				//}else {
+				if id == Local_ID {
+					LocalStateChannel.NewOrder <- newLocalOrder //send order local
+				}else {
 					TempKeyOrder = config.Keypress{DesignatedElevator: id, Floor: newLocalOrder.Floor, Button: newLocalOrder.Button}
-					go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder} () // send orders abroad
-					TempKeyOrder.Floor = 1
-					go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder} () // send orders abroad
-				//}
+					SyncChan.LocalOrderToExternal <- TempKeyOrder // send orders abroad
+				}
 
 			case TempKeyOrder = <- SyncChan.ExternalOrderToLocal:
 				TempButtonEvent= elevio.ButtonEvent{Button: TempKeyOrder.Button, Floor: TempKeyOrder.Floor}
@@ -49,7 +47,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 					TempKeyOrder.DesignatedElevator = costID
 					SyncChan.LocalOrderToExternal <- TempKeyOrder
 				}else {
-					go func () {LocalStateChannel.NewOrder <- TempButtonEvent}() //send order local
+					LocalStateChannel.NewOrder <- TempButtonEvent //send order local
 				}
 
 			case NewUpdateLocalElevator := <- LocalStateChannel.Elevator:
@@ -84,7 +82,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 								TempKeyOrder = config.Keypress{Floor: floor, Button: button, DesignatedElevator: costID} //but into keypress
 								//elevList[costID].Queue[floor][button] = true //at into their queue, maybe no necessary
 								//NewUpdateLocalElevator.Queue[floor][button] = false
-								go func () {SyncChan.LocalOrderToExternal <- TempKeyOrder}() //send order external
+								SyncChan.LocalOrderToExternal <- TempKeyOrder //send order external
 								//change = true
 
 							}
