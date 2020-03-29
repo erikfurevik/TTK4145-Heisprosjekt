@@ -33,17 +33,15 @@ func main() {
 	//defualt := "localhost:15657"
 	elevio.Init(localhost, config.NumFloor)
 	channels := fsm.StateChannels{
-		OrderComplete:  make(chan int),
-		Elevator:       make(chan config.Elev, 10),
-		NewOrder:       make(chan elevio.ButtonEvent, 10),
+		Elevator:       make(chan config.Elev),
+		NewOrder:       make(chan elevio.ButtonEvent, 100),
 		ArrivedAtFloor: make(chan int),
-		DeleteNewOrder: make(chan elevio.ButtonEvent),
-		DeleteQueue:	make(chan [config.NumFloor][config.NumButtons] bool, 10),
+		DeleteQueue:	make(chan [config.NumFloor][config.NumButtons] bool),
 	}
 
 	network := nc.NetworkChannels{
 		//from network to elevator controller
-	UpdateMainLogic:  			make(chan [config.NumElevator]config.Elev),
+	UpdateMainLogic:  			make(chan [config.NumElevator]config.Elev, 100),
 	OnlineElevators: 			make(chan [config.NumElevator]bool),	
 	ExternalOrderToLocal:		make(chan config.Keypress),			
 	
@@ -54,7 +52,7 @@ func main() {
 	//network controller to network
 	OutgoingMsg:     			make(chan config.Message),		
 	OutgoingOrder: 				make(chan config.Keypress),		
-	PeerTxEnable:    			make(chan bool),				
+	PeersTransmitEnable:    			make(chan bool),				
 
 	//network to network controller
 	IncomingMsg:     			make(chan config.Message, 30),			
@@ -71,7 +69,7 @@ func main() {
 	//id_string := strconv.Itoa(LocalID)
 	msgpPort := 42030 //Port for å sende stats
 	orderPort := 42050 //Port for å sende ordre
-	//peersPort := 42056 //Port for peers on network
+	peersPort := 42056 //Port for peers on network
 
 	go elevio.PollButtons(newOrder)
 	go elevio.PollFloorSensor(channels.ArrivedAtFloor)
@@ -89,11 +87,10 @@ func main() {
 	go bcast.Receiver(orderPort, network.IncomingOrder)
 
 
-	//go peers.Transmitter(port, id_string, enableTx) 
-	//go peers.Receiver(port, peerUpdate)             
+	go peers.Transmitter(peersPort, LocalIDString, network.PeersTransmitEnable) 
+	go peers.Receiver(peersPort, network.PeerUpdate)             
 
-	for{ 
-	}
+	select{}
 }
 
 	

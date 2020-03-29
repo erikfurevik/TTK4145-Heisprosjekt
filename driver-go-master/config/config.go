@@ -6,7 +6,7 @@ import (
 
 const (
 	NumFloor    int = 9
-	NumElevator int = 4
+	NumElevator int = 3
 	NumButtons  int = 3
 	//LocalID 	int = 0;
 )
@@ -34,7 +34,6 @@ const (
 	NotAck
 	Acked
 )
-
 type ElevState int
 
 const (
@@ -43,14 +42,12 @@ const (
 	Moving
 	DoorOpen
 )
-
 type Keypress struct {
 	Floor              int
-	Button                elevio.ButtonType
+	Button             elevio.ButtonType
 	DesignatedElevator int
-	Completed          bool
+	//Completed          bool
 }
-
 type Elev struct {
 	State ElevState
 	Dir   elevio.MotorDirection

@@ -13,7 +13,6 @@ type StateChannels struct {
 	ArrivedAtFloor chan int
 	NewOrder chan elevio.ButtonEvent
 	Elevator chan config.Elev
-	DeleteNewOrder chan elevio.ButtonEvent
 	DeleteQueue chan [config.NumFloor][config.NumButtons] bool 
 }
 
@@ -28,12 +27,7 @@ func RunElevator(channel StateChannels) {
 	DoorTimer.Stop()
 	EngineFailureTimer.Stop()
 	updateExternal := false
-
-	//var newOrder config.ButtonEvent
-	//TakeOrderTimer := := time.NewTimer(3 * time.Second)
-
 	//channel.Elevator <- elevator
-
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
@@ -53,10 +47,8 @@ func RunElevator(channel StateChannels) {
 					EngineFailureTimer.Reset(3 * time.Second)
 				}
 				updateExternal = true
-			
 			case config.Moving:
 				updateExternal = true
-
 			case config.DoorOpen:
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
@@ -64,18 +56,12 @@ func RunElevator(channel StateChannels) {
 				}else{
 					updateExternal = true
 				}
-				
 			case config.Undefined:
 				fmt.Println("fatal error")
 				updateExternal = true
 			}
-			
-		case deleteOrder := <- channel.DeleteNewOrder:
-			elevator.Queue[deleteOrder.Floor][deleteOrder.Button] = false 
-
 		case deleteQueue := <- channel.DeleteQueue:
 			elevator.Queue = deleteQueue
-
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			if shouldMotorStop(elevator) {
 				EngineFailureTimer.Stop()
@@ -105,7 +91,6 @@ func RunElevator(channel StateChannels) {
 				EngineFailureTimer.Reset(3 * time.Second)
 				elevio.SetMotorDirection(elevator.Dir)
 			}
-			//channel.OrderComplete <- elevator.Floor
 			updateExternal = true
 		case <-EngineFailureTimer.C:
 			elevator.State = config.Undefined
@@ -114,17 +99,15 @@ func RunElevator(channel StateChannels) {
 			updateExternal = true
 		}
 		if updateExternal{
-			channel.Elevator <- elevator
 			updateExternal = false
+			go func () {channel.Elevator <- elevator} ()
 		}
 	}
 }
-
 //UpdateKeys ..
 func UpdateKeys(NewOrder chan config.Keypress, receiveOrder chan elevio.ButtonEvent) {
 	var key config.Keypress
 	key.DesignatedElevator = 1
-	key.Completed = false
 	for {
 		select {
 		case order := <-receiveOrder:
@@ -136,7 +119,6 @@ func UpdateKeys(NewOrder chan config.Keypress, receiveOrder chan elevio.ButtonEv
 		}
 	}
 }
-
 //Testchannels ..
 func Testchannels(channel StateChannels) {
 	for {

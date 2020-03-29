@@ -7,8 +7,8 @@ import (
 
 func orderAbove(elevator config.Elev) bool {
 	for floor := elevator.Floor + 1; floor < config.NumFloor; floor++ {
-		for btn := 0; btn < config.NumButtons; btn++ {
-			if elevator.Queue[floor][btn] {
+		for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+			if elevator.Queue[floor][button] {
 				return true
 			}
 		}
@@ -18,8 +18,8 @@ func orderAbove(elevator config.Elev) bool {
 
 func orderBelow(elevator config.Elev) bool {
 	for floor := 0; floor < elevator.Floor; floor++ {
-		for btn := 0; btn < config.NumButtons; btn++ {
-			if elevator.Queue[floor][btn] {
+		for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+			if elevator.Queue[floor][button] {
 				return true
 			}
 		}
@@ -27,7 +27,7 @@ func orderBelow(elevator config.Elev) bool {
 	return false
 }
 func orderAtFloor(elevator config.Elev)bool{
-	for button := 0; button < config.NumButtons; button++{
+	for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
 		if elevator.Queue[elevator.Floor][button]{
 			return true
 		}

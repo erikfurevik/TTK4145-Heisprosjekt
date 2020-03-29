@@ -6,7 +6,7 @@ import (
 	//"../fsm"
 	peers "../network/peers"
 	//bcast "../network/bcast"
-	//"strconv"
+	"strconv"
 	"time"
 	"fmt"
 )
@@ -25,7 +25,7 @@ type NetworkChannels struct {
 	//network controller to network
 	OutgoingMsg     			chan config.Message			//not cocern of gov
 	OutgoingOrder 				chan config.Keypress		// new order from elevator controller going to network through the network controller
-	PeerTxEnable    			chan bool					//channel going to network, updating the other elevators about my presence
+	PeersTransmitEnable    		chan bool					//channel going to network, updating the other elevators about my presence
 
 	//network to network controller
 	IncomingMsg     			chan config.Message			//not concern of gov
@@ -39,7 +39,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		//registeredOrders [config.NumFloor][config.NumElevator - 1]config.Acklist
 		//elevList 		[config.NumElevator]config.Elev
 		msg 			config.Message
-		//onlineList 		[config.NumElevator]bool
+		onlineList 		[config.NumElevator]bool
 		//recentlyDies 	[config.NumElevator]bool
 		//someUpdate 		bool
 		//offline 		bool
@@ -56,7 +56,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 	reassignTimer.Stop()
 	broadcastElevTimer.Stop()
 	singleModeTicker.Stop()
-
+	
 
 	//In the future, i will have to get acknoledged for everything i send from all elevators
 	//I will have to acknolede for everything that i receive. 
@@ -65,8 +65,8 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 	//Only send new data if the previous have been been acknowledged
 	//onlineList = [config.NumElevator]bool {true}
 	msg.ID = Local_ID
+	channel.PeersTransmitEnable <- true
 
-	//channel.OnlineElevators <- onlineList
 
 
 	for {
@@ -86,14 +86,37 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 			//channel.ExternalOrderToLocal <- inOrder
 			//fmt.Println("receive local order")
 		}
-		
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
 		fmt.Println(inMSG.ID)
-			if inMSG.ID != Local_ID{
+			if inMSG.ID != Local_ID &&  inMSG != msg{
 				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
-				go func(){channel.UpdateMainLogic <- msg.Elevator} () //update elevator controller about the other elevators
+				//go func(){channel.UpdateMainLogic <- msg.Elevator} () //update elevator controller about the other elevators
+				channel.UpdateMainLogic <- msg.Elevator
 				//fmt.Println("receive external elevator:", inMSG.ID)
 			}
+		case peerUpdate := <-channel.PeerUpdate:
+
+			if len(peerUpdate.Peers) == 0{
+				onlineList[Local_ID] = false
+
+			}else if len(peerUpdate.Peers) == 1 {
+
+			}
+
+			if len(peerUpdate.New) > 0 {
+				newElev, _ := strconv.Atoi(peerUpdate.New)
+				onlineList[newElev] = true
+			}
+			if len(peerUpdate.Lost) > 0 {
+				lostElev, _ := strconv.Atoi(peerUpdate.Lost[0])
+				onlineList[lostElev] = false
+			}
+
+			go func () {channel.OnlineElevators <- onlineList} ()
+
+			fmt.Println("All peers.", len(peerUpdate.Peers))
+			fmt.Println("New peers: ", peerUpdate.New)
+			fmt.Println("Lost peers", peerUpdate.Lost)
 		}
 	}
 }
