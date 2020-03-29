@@ -82,7 +82,8 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 
 		case inOrder := <- channel.IncomingOrder: //order from network
 		if inOrder.DesignatedElevator == Local_ID {
-			channel.ExternalOrderToLocal <- inOrder
+			go func() {channel.ExternalOrderToLocal <- inOrder} ()
+			//channel.ExternalOrderToLocal <- inOrder
 			fmt.Println("receive local order")
 		}
 		

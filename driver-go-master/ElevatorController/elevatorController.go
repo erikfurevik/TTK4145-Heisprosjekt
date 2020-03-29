@@ -32,14 +32,14 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			case newLocalOrder := <- HardwareToControl:
 
 				id := costFunction(Local_ID, newLocalOrder, elevList, OnlineList)
-				if id == Local_ID {
-					go func() {LocalStateChannel.NewOrder <- newLocalOrder} () //send order local
-					//LocalStateChannel.NewOrder <- newLocalOrder
-				}else {
+				//if id == Local_ID {
+				//	go func() {LocalStateChannel.NewOrder <- newLocalOrder} () //send order local
+				//}else {
 					TempKeyOrder = config.Keypress{DesignatedElevator: id, Floor: newLocalOrder.Floor, Button: newLocalOrder.Button}
-					go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder}() // send orders abroad
-					//go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder}()
-				}
+					go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder} () // send orders abroad
+					TempKeyOrder.Floor = 1
+					go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder} () // send orders abroad
+				//}
 
 			case TempKeyOrder = <- SyncChan.ExternalOrderToLocal:
 				TempButtonEvent= elevio.ButtonEvent{Button: TempKeyOrder.Button, Floor: TempKeyOrder.Floor}
@@ -49,7 +49,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 					TempKeyOrder.DesignatedElevator = costID
 					SyncChan.LocalOrderToExternal <- TempKeyOrder
 				}else {
-					LocalStateChannel.NewOrder <- TempButtonEvent //send order local
+					go func () {LocalStateChannel.NewOrder <- TempButtonEvent}() //send order local
 				}
 
 			case NewUpdateLocalElevator := <- LocalStateChannel.Elevator:
@@ -94,7 +94,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 						//LocalStateChannel.DeleteQueue <-NewUpdateLocalElevator.Queue
 					}
 				}
-
 				elevList[Local_ID] = NewUpdateLocalElevator //update info about elevator
 				UpdateLight <- elevList //update lights
 				if OnlineList[Local_ID] {
