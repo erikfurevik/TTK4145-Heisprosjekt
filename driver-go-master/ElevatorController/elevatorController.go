@@ -23,7 +23,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			TempButtonEvent elevio.ButtonEvent			//Helper struct to convert between ButonEvent and Keypress
 
 		)
-		OnlineList = [config.NumElevator]bool {true,true, true , true}
+		OnlineList = [config.NumElevator]bool {true, true}
 		fmt.Println("starting mainlogic function:", Local_ID)
 
 
@@ -33,10 +33,10 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 
 				id := costFunction(Local_ID, newLocalOrder, elevList, OnlineList)
 				if id == Local_ID {
-					LocalStateChannel.NewOrder <- newLocalOrder //send order local
+					go func() {LocalStateChannel.NewOrder <- newLocalOrder} () //send order local
 				}else {
 					TempKeyOrder = config.Keypress{DesignatedElevator: id, Floor: newLocalOrder.Floor, Button: newLocalOrder.Button}
-					SyncChan.LocalOrderToExternal <- TempKeyOrder // send orders abroad
+					go func() {SyncChan.LocalOrderToExternal <- TempKeyOrder}() // send orders abroad
 				}
 
 			case TempKeyOrder = <- SyncChan.ExternalOrderToLocal:
@@ -73,25 +73,26 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 									
 				change = false
 				//i will have to test this further with more elevators
-				//if elevList[Local_ID].State != config.Undefined && NewUpdateLocalElevator.State == config.Undefined{ //i am undefiend now
-				//	elevList[Local_ID].State = config.Undefined //update that we are undefined
-				//	for floor := 0; floor < config.NumFloor; floor++{
-				//		for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{//distribute all orders except cab
-				//			if NewUpdateLocalElevator.Queue[floor][button]{
-				//				TempButtonEvent= elevio.ButtonEvent{Floor: floor, Button: button}
-				//				costID := costFunction(Local_ID, TempButtonEvent, elevList, OnlineList)
-				//				TempKeyOrder = config.Keypress{Floor: floor, Button: button, DesignatedElevator: costID}
-				//				elevList[costID].Queue[floor][button] = true
-				//				NewUpdateLocalElevator.Queue[floor][button] = false
-				//				SyncChan.LocalOrderToExternal <- TempKeyOrder //send order external
-				//				change = true
-				//			}
-				//		}
-				//	}
-				//	if change {
-				//		LocalStateChannel.DeleteQueue <-NewUpdateLocalElevator.Queue
-				//	}
-				//}
+				if elevList[Local_ID].State != config.Undefined && NewUpdateLocalElevator.State == config.Undefined{ //i am undefiend now 
+					elevList[Local_ID].State = config.Undefined //update that we are undefined
+					for floor := 0; floor < config.NumFloor; floor++{
+						for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{//distribute all orders except cab
+							if NewUpdateLocalElevator.Queue[floor][button]{ //i have hall order at that floor
+								TempButtonEvent= elevio.ButtonEvent{Floor: floor, Button: button} //make Button struct
+								costID := costFunction(Local_ID, TempButtonEvent, elevList, OnlineList) //calculate cost
+								TempKeyOrder = config.Keypress{Floor: floor, Button: button, DesignatedElevator: costID} //but into keypress
+								elevList[costID].Queue[floor][button] = true //at into their queue, maybe no necessary
+								//NewUpdateLocalElevator.Queue[floor][button] = false
+								go func () {SyncChan.LocalOrderToExternal <- TempKeyOrder}() //send order external
+								change = true
+							}
+						}
+					}
+					if change {
+						//LocalStateChannel.DeleteQueue <-NewUpdateLocalElevator.Queue
+					}
+				}
+
 				elevList[Local_ID] = NewUpdateLocalElevator //update info about elevator
 				UpdateLight <- elevList //update lights
 				if OnlineList[Local_ID] {
@@ -99,7 +100,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 				}
 
 
-			case TempKeyOrder.Floor = <- LocalStateChannel.OrderComplete: 
+			//case TempKeyOrder.Floor = <- LocalStateChannel.OrderComplete: 
 				////an order is complete from the local fsm
 				//fmt.Println("order completed:",Local_ID)
 				////Delete the finisehd Hall Button orders from all elevators
@@ -116,19 +117,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 				//UpdateLight <- elevList //update lights
 				
 			case tempElevatorArray := <-SyncChan.UpdateMainLogic:
-				//The update from the other elevators about their state, queue, motor direction etc
-				//for id := 0; id < config.NumElevator; id++ {
-				//	if id != Local_ID {
-				//		if elevList[id].State != config.Undefined && tempElevatorArray[id].State == config.Undefined{
-				//			for floor := 0; floor < config.NumFloor; floor++ {
-				//				elevList[id].Queue[floor][elevio.BT_HallUp] = false
-				//				elevList[id].Queue[floor][elevio.BT_HallDown] = false
-				//			}
-				//		}
-				//	}
-				//}
-
-
 				change := false
 				tempQueue := elevList[Local_ID].Queue
 				for id := 0; id < config.NumElevator; id++ {
@@ -139,25 +127,19 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 									change = true
 								}
 							}
-							if change {
+							if change{
 								change = false
-								tempQueue[floor][elevio.BT_HallUp] = false
-								tempQueue[floor][elevio.BT_HallDown] = false
-							}
-							//if change{
-							//	change = false
-								//for newID := 0; newID < config.NumElevator; newID++{
-								//	if newID == Local_ID{
-								//		tempQueue[floor][elevio.BT_HallUp] = false
-								//		tempQueue[floor][elevio.BT_HallDown] = false
-								//	}
-								//	if newID != id && newID != Local_ID {
-								//		tempElevatorArray[newID].Queue[floor][elevio.BT_HallUp] = false
-								//		tempElevatorArray[newID].Queue[floor][elevio.BT_HallDown] = false
-								//	}
-								//}
-								
-							//}	
+								for newID := 0; newID < config.NumElevator; newID++{
+									if newID == Local_ID{
+										tempQueue[floor][elevio.BT_HallUp] = false
+										tempQueue[floor][elevio.BT_HallDown] = false
+									}
+									if newID != id && newID != Local_ID {
+										tempElevatorArray[newID].Queue[floor][elevio.BT_HallUp] = false
+										tempElevatorArray[newID].Queue[floor][elevio.BT_HallDown] = false
+									}
+								}
+							}	
 						}
 					}
 				}

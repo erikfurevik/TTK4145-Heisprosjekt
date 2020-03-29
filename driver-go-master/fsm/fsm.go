@@ -64,6 +64,7 @@ func RunElevator(channel StateChannels) {
 				
 			case config.Undefined:
 				fmt.Println("fatal error")
+				updateExternal = true
 			}
 			
 		case deleteOrder := <- channel.DeleteNewOrder:

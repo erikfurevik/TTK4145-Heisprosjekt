@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	NumFloor    int = 4
-	NumElevator int = 4
+	NumFloor    int = 6
+	NumElevator int = 2
 	NumButtons  int = 3
 	//LocalID 	int = 0;
 )
