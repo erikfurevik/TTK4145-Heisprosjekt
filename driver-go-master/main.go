@@ -47,12 +47,12 @@ func main() {
 	
 	//from elevator to network controller
 	LocalOrderToExternal:  		make(chan config.Keypress), 			
-	LocalElevatorToExternal:  	make(chan config.Elev), 			
+	LocalElevatorToExternal:  	make(chan [config.NumElevator]config.Elev), 			
 	
 	//network controller to network
 	OutgoingMsg:     			make(chan config.Message),		
 	OutgoingOrder: 				make(chan config.Keypress),		
-	PeersTransmitEnable:    			make(chan bool),				
+	PeersTransmitEnable:    	make(chan bool),				
 
 	//network to network controller
 	IncomingMsg:     			make(chan config.Message, 30),			

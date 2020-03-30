@@ -20,8 +20,9 @@ type NetworkChannels struct {
 	
 	//from elevator to network controller
 	LocalOrderToExternal  		chan config.Keypress 			//channel used to send orders to other elevators
-	LocalElevatorToExternal  	chan config.Elev 				//channel that send the status of the local elevator from gov to sync
-	
+	//LocalElevatorToExternal  	chan config.Elev 				//channel that send the status of the local elevator from gov to sync
+	LocalElevatorToExternal		chan [config.NumElevator]config.Elev
+
 	//network controller to network
 	OutgoingMsg     			chan config.Message			//not cocern of gov
 	OutgoingOrder 				chan config.Keypress		// new order from elevator controller going to network through the network controller
@@ -71,11 +72,11 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 
 	for {
 		select {
-		case newElev := <- channel.LocalElevatorToExternal: //update of our elevator
-			msg.Elevator[Local_ID] = newElev //update message struct
-			channel.OutgoingMsg <- msg
-			//fmt.Println("send local elevator state: ", Local_ID)
-
+		case msg.Elevator = <- channel.LocalElevatorToExternal: //update of our elevator
+			if onlineList[Local_ID]{
+				channel.OutgoingMsg <- msg
+					//fmt.Println("send local elevator state: ", Local_ID)
+			}
 		case ExternalOrder := <- channel.LocalOrderToExternal: //get order from controller
 			channel.OutgoingOrder <- ExternalOrder //send it over the network
 			//fmt.Println("send local order to abroad")
@@ -87,7 +88,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 			//fmt.Println("receive local order")
 		}
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
-		fmt.Println(inMSG.ID)
+			fmt.Println(inMSG.ID)
 			if inMSG.ID != Local_ID &&  inMSG != msg{
 				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
 				channel.UpdateMainLogic <- msg.Elevator
@@ -99,7 +100,6 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 				for id := 0; id < config.NumElevator; id++ {
 					onlineList[id] = false				
 				}
-
 			}
 			if len(peerUpdate.New) > 0 {
 				newElev, _ := strconv.Atoi(peerUpdate.New)
@@ -112,12 +112,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 
 			go func () {channel.OnlineElevators <- onlineList} ()
 
-
-
-
-
-
-			
+		
 			fmt.Println("Number peers.", len(peerUpdate.Peers))
 			fmt.Println("New peers: ", peerUpdate.New)
 			fmt.Println("Lost peers", peerUpdate.Lost)
