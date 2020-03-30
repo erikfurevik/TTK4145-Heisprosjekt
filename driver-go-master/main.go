@@ -47,7 +47,7 @@ func main() {
 	
 	//from elevator to network controller
 	LocalOrderToExternal:  		make(chan config.Keypress), 			
-	LocalElevatorToExternal:  	make(chan config.Elev), 			
+	LocalElevatorToExternal:  	make(chan [config.NumElevator]config.Elev), 			
 	
 	//network controller to network
 	OutgoingMsg:     			make(chan config.Message),		

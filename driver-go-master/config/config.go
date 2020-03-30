@@ -30,8 +30,7 @@ const (
 type Acknowledge int
 
 const (
-	Finished Acknowledge = iota - 1
-	NotAck
+	NotAck Acknowledge = iota - 1
 	Acked
 )
 type ElevState int
@@ -62,6 +61,5 @@ type AckList struct {
 
 type Message struct {
 	Elevator         [NumElevator]Elev
-	//RegisteredOrders [NumFloor][NumButtons - 1]AckList
 	ID               int
 }
