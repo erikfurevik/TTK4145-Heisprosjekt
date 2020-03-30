@@ -112,6 +112,12 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 
 			go func () {channel.OnlineElevators <- onlineList} ()
 
+
+
+
+
+
+			
 			fmt.Println("Number peers.", len(peerUpdate.Peers))
 			fmt.Println("New peers: ", peerUpdate.New)
 			fmt.Println("Lost peers", peerUpdate.Lost)
