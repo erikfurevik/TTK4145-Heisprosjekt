@@ -42,7 +42,7 @@ func costFunction(Local_ID int, LocalOrder elevio.ButtonEvent, elevatorList [con
     }
 
     maxCost := 1000;
-    var bestElev int
+    bestElev := -1
     for elev := 0; elev < config.NumElevator; elev++{
         if CostArray[elev] < maxCost && elevatorOnline[elev] && elevatorList[elev].State != config.Undefined{
             bestElev = elev

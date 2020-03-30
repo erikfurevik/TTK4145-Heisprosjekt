@@ -44,7 +44,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		//someUpdate 		bool
 		//offline 		bool
 	)
-
+	
 
 
 	//lostID := -1
@@ -90,19 +90,17 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		fmt.Println(inMSG.ID)
 			if inMSG.ID != Local_ID &&  inMSG != msg{
 				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
-				//go func(){channel.UpdateMainLogic <- msg.Elevator} () //update elevator controller about the other elevators
 				channel.UpdateMainLogic <- msg.Elevator
 				//fmt.Println("receive external elevator:", inMSG.ID)
 			}
 		case peerUpdate := <-channel.PeerUpdate:
 
 			if len(peerUpdate.Peers) == 0{
-				onlineList[Local_ID] = false
-
-			}else if len(peerUpdate.Peers) == 1 {
+				for id := 0; id < config.NumElevator; id++ {
+					onlineList[id] = false				
+				}
 
 			}
-
 			if len(peerUpdate.New) > 0 {
 				newElev, _ := strconv.Atoi(peerUpdate.New)
 				onlineList[newElev] = true
@@ -114,7 +112,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 
 			go func () {channel.OnlineElevators <- onlineList} ()
 
-			fmt.Println("All peers.", len(peerUpdate.Peers))
+			fmt.Println("Number peers.", len(peerUpdate.Peers))
 			fmt.Println("New peers: ", peerUpdate.New)
 			fmt.Println("Lost peers", peerUpdate.Lost)
 		}

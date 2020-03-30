@@ -28,11 +28,13 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			select {
 			case newLocalOrder := <- HardwareToControl:
 				id := costFunction(Local_ID, newLocalOrder, elevList, OnlineList)
-				if id == Local_ID {
-					LocalStateChannel.NewOrder <- newLocalOrder //send order local
-				}else {
-					TempKeyOrder = config.Keypress{DesignatedElevator: id, Floor: newLocalOrder.Floor, Button: newLocalOrder.Button}
-					SyncChan.LocalOrderToExternal <- TempKeyOrder // send orders abroad
+				if id != -1 {
+					if id == Local_ID {
+						LocalStateChannel.NewOrder <- newLocalOrder //send order local
+					}else {
+						TempKeyOrder = config.Keypress{DesignatedElevator: id, Floor: newLocalOrder.Floor, Button: newLocalOrder.Button}
+						SyncChan.LocalOrderToExternal <- TempKeyOrder // send orders abroad
+					}
 				}
 			case TempKeyOrder = <- SyncChan.ExternalOrderToLocal:
 				TempButtonEvent= elevio.ButtonEvent{Button: TempKeyOrder.Button, Floor: TempKeyOrder.Floor}
@@ -130,40 +132,61 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 
 			case NewOnlineList := <- SyncChan.OnlineElevators:
 				change := false
-				
-				if OnlineList[Local_ID] && !NewOnlineList[Local_ID]{
-					for floor := 0; floor < config.NumFloor; floor++ {
-						for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{
-							if elevList[Local_ID].Queue[floor][button]{
-								change = true
-								elevList[Local_ID].Queue[floor][button] = false
+				numofOnlineElevs := 0
+
+				for id := 0; id < config.NumElevator; id++ {
+					if NewOnlineList[id] == false {
+						numofOnlineElevs  ++
+					}				
+				}
+
+				if numofOnlineElevs == config.NumElevator{ // we are offline
+					for id := 0; id < config.NumElevator; id++ {
+						for floor := 0; floor < config.NumFloor; floor++ {
+							for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+								if id != Local_ID {
+									elevList[id].Queue[floor][button] = false //delete all order from all elevators
+								}
 							}
+							elevList[Local_ID].Queue[floor][elevio.BT_HallDown] = false 
+							elevList[Local_ID].Queue[floor][elevio.BT_HallDown]	= false
+
 						}
 					}
 					if change{
 						LocalStateChannel.DeleteQueue <-elevList[Local_ID].Queue
-					}
+					}	
 				}
-
+				change = false
 				//if another elevator goes offline
 				//This i will have to be testet properly
-				for id := 0; id < config.NumElevator; id++{
-					if id != Local_ID && OnlineList[id] && !NewOnlineList[id]{ // if another elevator falls of the network
-						for floor := 0; floor < config.NumFloor; floor++ {
-							for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{
-								if elevList[id].Queue[floor][button]{ //for all orders that are not cab for the elevator that fel of the net
-									TempButtonEvent = elevio.ButtonEvent{Floor: floor, Button: button}
-									costID := costFunction(Local_ID, TempButtonEvent, elevList, NewOnlineList)
-									elevList[id].Queue[floor][button] = false //delete the order from their queue
-									if costID == Local_ID{ //recalculate the cost and if we should take the orders, then we send it to ourselves. 
-										LocalStateChannel.NewOrder <- TempButtonEvent 
-										//elevList[Local_ID].Queue[floor][button] = true //Might not be necessary,
+				if numofOnlineElevs < config.NumElevator{ //i am online but someone else fell off
+					for id := 0; id < config.NumElevator; id++{ 
+						if OnlineList[id] && !NewOnlineList[id]{ // for every elevator that fell off
+							for floor := 0; floor < config.NumFloor; floor++ {
+								for button := elevio.BT_HallUp; button < elevio.BT_Cab; button++{
+									if elevList[id].Queue[floor][button]{ //for every hall order that they had
+										TempButtonEvent = elevio.ButtonEvent{Floor: floor, Button: button}
+										costID := costFunction(Local_ID, TempButtonEvent, elevList, NewOnlineList)
+										//elevList[id].Queue[floor][button] = false //delete the order from their queue
+										if costID == Local_ID{ //recalculate the cost and if we should take the orders, then we send it to ourselves. 
+											LocalStateChannel.NewOrder <- TempButtonEvent 
+											change = true
+											//elevList[Local_ID].Queue[floor][button] = true //Might not be necessary,
+										}
 									}
 								}
+								elevList[id].Queue[floor][elevio.BT_HallDown] = false
+								elevList[id].Queue[floor][elevio.BT_HallDown] = false
+								elevList[id].Queue[floor][elevio.BT_Cab] = false
 							}
 						}
 					}
 				}
+				if change {
+					go func() {SyncChan.LocalElevatorToExternal <- elevList[Local_ID]} ()
+				}
+				
 				//if our elevator goes offline
 				OnlineList = NewOnlineList
 			}
