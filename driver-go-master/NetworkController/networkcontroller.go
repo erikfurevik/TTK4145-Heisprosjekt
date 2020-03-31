@@ -62,7 +62,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 		if inOrder.DesignatedElevator == Local_ID && incomingOrder != inOrder {
 			incomingOrder = inOrder
 			channel.ExternalOrderToLocal <- inOrder
-			fmt.Println("incoming order")
+			//fmt.Println("incoming order")
 		}
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
 			if inMSG.ID != Local_ID &&  inMSG.Elevator[inMSG.ID] != msg.Elevator[inMSG.ID]{
@@ -83,7 +83,7 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 			}
 		case <- orderTicker.C:
 			channel.OutgoingOrder <- outgoingOrder //send it over the network
-			fmt.Println("sending order")
+			//fmt.Println("sending order")
 
 		case <- deleteIncomingOrderTicker.C:
 			incomingOrder = config.Keypress {Floor: -1,}

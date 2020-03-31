@@ -3,6 +3,9 @@ package fsm
 import (
 	"../config"
 	"../elevio"
+	"os"
+	"fmt"
+	"strconv"
 )
 
 func orderAbove(elevator config.Elev) bool {
@@ -83,7 +86,39 @@ func chooseDirection(elevator config.Elev) elevio.MotorDirection {
 }
 
 
-func writetoFile(filname string, cabOrder [config.NumFloor]bool){
+func writetoFile(filname string, LocalID int, elevator config.Elev){
+	idstring := strconv.Itoa(LocalID)
+	writeFile, _ := os.Create(filname + idstring)
+	var stringVariable string
+	
+	for i := 0; i < config.NumFloor; i++{
+		if elevator.Queue[i][elevio.BT_Cab] {
+			stringVariable = stringVariable + "1"
+		}else{
+			stringVariable = stringVariable + "0"
+			}	
+	}
+	fmt.Println(stringVariable)
+	data := []byte(stringVariable)
+	writeFile.Write(data)
 
 }
 
+
+func readFromFile(filename string ,LocalID int, elevator * config.Elev){
+	idstring := strconv.Itoa(LocalID)
+	readFile, _ := os.Open(filename + idstring)
+	data := make([]byte, config.NumFloor)
+	readFile.Read(data)
+
+	for i := 0; i < config.NumFloor; i++{
+		if string(data[i]) == "1" {
+			elevator.Queue[i][elevio.BT_Cab] = true
+		}else{
+			elevator.Queue[i][elevio.BT_Cab] = false
+		}
+	}
+	readFile.Close()
+
+	fmt.Println(elevator.Queue)
+}

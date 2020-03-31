@@ -18,11 +18,8 @@ func main() {
 	 
 	LocalIDString := os.Args[1]
 	localhost := "localhost:" + os.Args[2]
-	LocalID,err := strconv.Atoi(LocalIDString)
+	LocalID,_ := strconv.Atoi(LocalIDString)
 
-	if err != nil {
-		panic(err.Error())
-	}
 	
 	//defualt := "localhost:15657"
 	elevio.Init(localhost, config.NumFloor)
@@ -66,7 +63,7 @@ func main() {
 	go elevio.PollButtons(newOrder)
 	go elevio.PollFloorSensor(channels.ArrivedAtFloor)
 	
-	go fsm.RunElevator(channels)
+	go fsm.RunElevator(channels, LocalID)
 	go ec.MainLogicFunction(LocalID ,newOrder, updateLight, channels, network)
 	go ec.LightSetter(updateLight,LocalID)
 	go nc.NetworkController(LocalID, network)

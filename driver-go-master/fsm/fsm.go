@@ -16,7 +16,7 @@ type StateChannels struct {
 	DeleteQueue chan [config.NumFloor][config.NumButtons] bool 
 }
 
-func RunElevator(channel StateChannels) {
+func RunElevator(channel StateChannels , LocalID int) {
 	elevator := config.Elev{
 		State: config.Idle,
 		Dir:   elevio.MD_Stop,
@@ -32,6 +32,9 @@ func RunElevator(channel StateChannels) {
 	for elevio.GetFloor() == -1 {
 		elevio.SetMotorDirection(elevio.MD_Down)
 	}
+	elevio.SetMotorDirection(elevio.MD_Stop)
+	readFromFile("cabOrders",LocalID, &elevator)
+	
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
@@ -105,6 +108,7 @@ func RunElevator(channel StateChannels) {
 		}
 		if updateExternal{
 			updateExternal = false
+			writetoFile("cabOrders", LocalID ,elevator)
 			go func () {channel.Elevator <- elevator} ()
 		}
 	}
