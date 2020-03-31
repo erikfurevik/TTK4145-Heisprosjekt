@@ -19,10 +19,10 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 			OnlineList 		[config.NumElevator]bool		//check which elevator that is online
 			TempKeyOrder 	config.Keypress					//Helper struct to Convert between ButtonEvent and Keypress
 			TempButtonEvent elevio.ButtonEvent			//Helper struct to convert between ButonEvent and Keypress
-			//elevMsg 		chan config.Message
-
 		)
 		fmt.Println("starting mainlogic function:", Local_ID)
+
+
 
 		for {
 			select {
@@ -83,7 +83,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 					}
 				}
 				elevList[Local_ID] = NewUpdateLocalElevator //update info about elevator
-
 				go func () {UpdateLight <- elevList} ()
 				if OnlineList[Local_ID] {
 					go func() {SyncChan.LocalElevatorToExternal <- elevList} ()
@@ -128,9 +127,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 					}
 					elevList[id] = tempElevatorArray[id] //See if there are any chagnes. Save the updated elevators
 				}
-				
 				go func () {UpdateLight <- elevList} ()
-
 			case NewOnlineList := <- SyncChan.OnlineElevators:
 				change := false
 				numofOnlineElevs := 0
@@ -140,7 +137,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 						numofOnlineElevs  ++
 					}				
 				}
-
 				if numofOnlineElevs == 0{ // we are offline
 					for id := 0; id < config.NumElevator; id++ {
 						for floor := 0; floor < config.NumFloor; floor++ {
@@ -160,8 +156,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 					}	
 				}
 				change = false
-				//if another elevator goes offline
-				//This i will have to be testet properly
 				if numofOnlineElevs > 0{ //i am online but someone else fell off
 					for id := 0; id < config.NumElevator; id++{ 
 						if OnlineList[id] && !NewOnlineList[id]{ // for every elevator that fell off
@@ -179,7 +173,6 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 												//elevList[Local_ID].Queue[floor][button] = true //Might not be necessary,
 											}
 										}
-
 									}
 								}															
 							}
@@ -189,9 +182,7 @@ func MainLogicFunction(Local_ID int, HardwareToControl <-chan elevio.ButtonEvent
 				if change {
 					go func() {SyncChan.LocalElevatorToExternal <- elevList} ()
 				}
-				
 				go func () {UpdateLight <- elevList} ()
-				//if our elevator goes offline
 				OnlineList = NewOnlineList
 			}
 		}

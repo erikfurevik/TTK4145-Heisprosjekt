@@ -8,31 +8,8 @@ const (
 	NumFloor    int = 9
 	NumElevator int = 3
 	NumButtons  int = 3
-	//LocalID 	int = 0;
 )
 
-/*type ButtonType int AKA Button
-
-const (
-	BT_HallUp   ButtonType = 0
-	BT_HallDown            = 1
-	BT_Cab                 = 2
-)*/
-
-/*type MotorDirection int  AKA Direction
-
-const (
-	MD_Up   MotorDirection = 1
-	MD_Down                = -1
-	MD_Stop                = 0
-)*/
-
-type Acknowledge int
-
-const (
-	NotAck Acknowledge = iota - 1
-	Acked
-)
 type ElevState int
 
 const (
@@ -45,7 +22,6 @@ type Keypress struct {
 	Floor              int
 	Button             elevio.ButtonType
 	DesignatedElevator int
-	//Completed          bool
 }
 type Elev struct {
 	State ElevState
@@ -54,10 +30,6 @@ type Elev struct {
 	Queue [NumFloor][NumButtons]bool
 }
 
-type AckList struct {
-	ElevatorID		   int
-	ImplicitAcks       [NumElevator]Acknowledge
-}
 
 type Message struct {
 	Elevator         [NumElevator]Elev

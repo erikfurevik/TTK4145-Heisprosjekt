@@ -1,9 +1,7 @@
 package main
 
 import (
-	//"fmt"
 	"strconv"
-	//"time"
 	"os"
 
 	"./config"
@@ -17,10 +15,6 @@ import (
 
 
 func main() {
-	// For å kjøre koden må du først skrive "run go main.go" som vanlig så må du spesifisere IDen til heisen og hvilke port den skal kobles til
-	// på simulatoren
-	//eksempel kode: go run main.go 0 15000
-	//koden kjører med id = 0 og port = 15000
 	 
 	LocalIDString := os.Args[1]
 	localhost := "localhost:" + os.Args[2]
@@ -40,7 +34,7 @@ func main() {
 	}
 
 	network := nc.NetworkChannels{
-		//from network to elevator controller
+	//from network to elevator controller
 	UpdateMainLogic:  			make(chan [config.NumElevator]config.Elev, 100),
 	OnlineElevators: 			make(chan [config.NumElevator]bool),	
 	ExternalOrderToLocal:		make(chan config.Keypress),			
@@ -52,7 +46,7 @@ func main() {
 	//network controller to network
 	OutgoingMsg:     			make(chan config.Message),		
 	OutgoingOrder: 				make(chan config.Keypress),		
-	PeersTransmitEnable:    			make(chan bool),				
+	PeersTransmitEnable:    	make(chan bool),				
 
 	//network to network controller
 	IncomingMsg:     			make(chan config.Message, 30),			
@@ -65,8 +59,6 @@ func main() {
 		updateLight = make(chan [config.NumElevator]config.Elev)
 	)
 
-
-	//id_string := strconv.Itoa(LocalID)
 	msgpPort := 42000 //Port for å sende stats
 	orderPort := 43000 //Port for å sende ordre
 	peersPort := 44000 //Port for peers on network

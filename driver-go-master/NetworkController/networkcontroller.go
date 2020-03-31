@@ -11,7 +11,6 @@ import (
 	"fmt"
 )
 
-
 type NetworkChannels struct {
 	//from network to elevator controller
 	UpdateMainLogic  			chan [config.NumElevator]config.Elev //updates elevator controller function with the states of the other elevators
