@@ -24,12 +24,10 @@ func RunElevator(channel StateChannels) {
 	}
 	DoorTimer := time.NewTimer(3 * time.Second)
 	EngineFailureTimer := time.NewTimer(3 * time.Second)
-	//EngineTicker := time.NewTicker(500 * time.Millisecond)
-	//EngineTicker.Stop()
+
 	DoorTimer.Stop()
 	EngineFailureTimer.Stop()
 	updateExternal := false
-
 
 	for elevio.GetFloor() == -1 {
 		elevio.SetMotorDirection(elevio.MD_Down)
@@ -69,6 +67,7 @@ func RunElevator(channel StateChannels) {
 		case deleteQueue := <- channel.DeleteQueue:
 			elevator.Queue = deleteQueue
 		case elevator.Floor = <-channel.ArrivedAtFloor:
+			elevio.SetFloorIndicator(elevator.Floor)
 			if shouldMotorStop(elevator) {
 				EngineFailureTimer.Stop()
 				elevio.SetMotorDirection(elevio.MD_Stop)

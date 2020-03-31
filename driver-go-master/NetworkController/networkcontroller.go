@@ -38,43 +38,56 @@ func NetworkController(Local_ID int, channel NetworkChannels){
 	var (
 		msg 			config.Message
 		onlineList 		[config.NumElevator]bool
+		outgoingOrder 	config.Keypress
+		incomingOrder  	config.Keypress
 	)
 	
-	reassignTimer 			:= time.NewTimer(5 *time.Second)
-	broadcastMsgTicker  	:= time.NewTicker(60 * time.Millisecond)
+	PrimaryOrderTimer 			:= time.NewTicker(100 * time.Millisecond)
+	orderTicker					:= time.NewTicker(10 * time.Millisecond)
+	broadcastMsgTicker  		:= time.NewTicker(40 * time.Millisecond)
+	deleteIncomingOrderTicker 	:= time.NewTicker(1 * time.Second)
+	orderTicker.Stop()
 
-	reassignTimer.Stop()
-	//broadcastMsgTicker.Reset(100 * time.Millisecond)
-	
-
-	//In the future, i will have to get acknoledged for everything i send from all elevators
-	//I will have to acknolede for everything that i receive. 
-	//Only send new data if the previous have been been acknowledged
 	msg.ID = Local_ID
 	channel.PeersTransmitEnable <- true
+	queue := make([]config.Keypress, 0) 
 
 
 	for {
 		select {
 		case msg.Elevator = <- channel.LocalElevatorToExternal: //update of our elevator
-			
 		case ExternalOrder := <- channel.LocalOrderToExternal: //get order from controller
-			channel.OutgoingOrder <- ExternalOrder //send it over the network
+			queue = append(queue, ExternalOrder) //put order to queue
 
 		case inOrder := <- channel.IncomingOrder: //order from network
-		if inOrder.DesignatedElevator == Local_ID {
+		if inOrder.DesignatedElevator == Local_ID && incomingOrder != inOrder {
+			incomingOrder = inOrder
 			channel.ExternalOrderToLocal <- inOrder
+			fmt.Println("incoming order")
 		}
 		case inMSG := <- channel.IncomingMsg: //state of an elevator abroad
 			if inMSG.ID != Local_ID &&  inMSG.Elevator[inMSG.ID] != msg.Elevator[inMSG.ID]{
 				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
 				channel.UpdateMainLogic <- msg.Elevator
-				fmt.Println("Receiving")
 			}
 		case <- broadcastMsgTicker.C:
 			if onlineList[Local_ID]{
 				channel.OutgoingMsg <- msg
 			}
+		case <- PrimaryOrderTimer.C:
+			if len(queue) > 0{
+				outgoingOrder = queue[0];
+				queue = queue[1:]
+				orderTicker = time.NewTicker(10 * time.Millisecond)
+			}else {
+				orderTicker.Stop()
+			}
+		case <- orderTicker.C:
+			channel.OutgoingOrder <- outgoingOrder //send it over the network
+			fmt.Println("sending order")
+
+		case <- deleteIncomingOrderTicker.C:
+			incomingOrder = config.Keypress {Floor: -1,}
 		case peerUpdate := <-channel.PeerUpdate:
 			if len(peerUpdate.Peers) == 0{
 				for id := 0; id < config.NumElevator; id++ {
