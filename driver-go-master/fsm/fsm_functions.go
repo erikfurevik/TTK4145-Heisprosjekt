@@ -81,3 +81,9 @@ func chooseDirection(elevator config.Elev) elevio.MotorDirection {
 	}
 	return elevio.MD_Stop
 }
+
+
+func writetoFile(filname string, cabOrder [config.NumFloor]bool){
+
+}
+
