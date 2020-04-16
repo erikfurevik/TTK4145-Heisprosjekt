@@ -1,5 +1,3 @@
-//Denne modulen er hentet rett fra utdelt nettverk (line 52-54 er lagt til!), så det må kommenteres i readMe.
-//Engelske kommentarer står fra før
 package bcast
 
 import (
@@ -69,8 +67,6 @@ func Receiver(port int, chans ...interface{}) {
 		}
 	}
 }
-
-
 
 // Checks that args to Tx'er/Rx'er are valid:
 //  All args must be channels
