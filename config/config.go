@@ -18,6 +18,7 @@ const (
 	Moving
 	DoorOpen
 )
+
 type Keypress struct {
 	Floor              int
 	Button             elevio.ButtonType
@@ -30,8 +31,7 @@ type Elev struct {
 	Queue [NumFloor][NumButtons]bool
 }
 
-
 type Message struct {
-	Elevator         [NumElevator]Elev
-	ID               int
+	Elevator [NumElevator]Elev
+	ID       int
 }
