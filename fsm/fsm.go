@@ -9,14 +9,14 @@ import (
 )
 
 type StateChannels struct {
-	OrderComplete chan int
+	OrderComplete  chan int
 	ArrivedAtFloor chan int
-	NewOrder chan elevio.ButtonEvent
-	Elevator chan config.Elev
-	DeleteQueue chan [config.NumFloor][config.NumButtons] bool 
+	NewOrder       chan elevio.ButtonEvent
+	Elevator       chan config.Elev
+	DeleteQueue    chan [config.NumFloor][config.NumButtons]bool
 }
 
-func RunElevator(channel StateChannels , LocalID int) {
+func RunElevator(channel StateChannels, LocalID int) {
 	elevator := config.Elev{
 		State: config.Idle,
 		Dir:   elevio.MD_Stop,
@@ -33,8 +33,8 @@ func RunElevator(channel StateChannels , LocalID int) {
 		elevio.SetMotorDirection(elevio.MD_Down)
 	}
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	readFromFile("cabOrders",LocalID, &elevator)
-	
+	readFromFile("cabOrders", LocalID, &elevator)
+
 	for {
 		select {
 		case newOrder := <-channel.NewOrder:
@@ -60,24 +60,24 @@ func RunElevator(channel StateChannels , LocalID int) {
 				if elevator.Floor == newOrder.Floor {
 					DoorTimer.Reset(3 * time.Second)
 					elevator.Queue[elevator.Floor] = [config.NumButtons]bool{false}
-				}else{
+				} else {
 					updateExternal = true
 				}
 			case config.Undefined:
 				fmt.Println("fatal error")
 				updateExternal = true
 			}
-		case deleteQueue := <- channel.DeleteQueue:
+		case deleteQueue := <-channel.DeleteQueue:
 			elevator.Queue = deleteQueue
 		case elevator.Floor = <-channel.ArrivedAtFloor:
 			elevio.SetFloorIndicator(elevator.Floor)
 			if shouldMotorStop(elevator) {
 				EngineFailureTimer.Stop()
 				elevio.SetMotorDirection(elevio.MD_Stop)
-				if !orderAtFloor(elevator){
+				if !orderAtFloor(elevator) {
 					elevator.State = config.Idle
 					DoorTimer.Reset(3 * time.Millisecond)
-				}else {
+				} else {
 					elevio.SetDoorOpenLamp(true)
 					elevator.State = config.DoorOpen
 					DoorTimer.Reset(3 * time.Second)
@@ -106,14 +106,14 @@ func RunElevator(channel StateChannels , LocalID int) {
 			EngineFailureTimer.Reset(5 * time.Second)
 			updateExternal = true
 		}
-		if updateExternal{
+		if updateExternal {
 			updateExternal = false
-			writetoFile("cabOrders", LocalID ,elevator)
-			go func () {channel.Elevator <- elevator} ()
+			writetoFile("cabOrders", LocalID, elevator)
+			go func() { channel.Elevator <- elevator }()
 		}
 	}
 }
-//UpdateKeys ..
+
 func UpdateKeys(NewOrder chan config.Keypress, receiveOrder chan elevio.ButtonEvent) {
 	var key config.Keypress
 	key.DesignatedElevator = 1
@@ -122,13 +122,12 @@ func UpdateKeys(NewOrder chan config.Keypress, receiveOrder chan elevio.ButtonEv
 		case order := <-receiveOrder:
 			key.Floor = order.Floor
 			key.Button = order.Button
-			//fmt.Println(key.Floor)
 			NewOrder <- key
 
 		}
 	}
 }
-//Testchannels ..
+
 func Testchannels(channel StateChannels) {
 	for {
 		select {
