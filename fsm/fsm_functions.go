@@ -1,16 +1,17 @@
 package fsm
 
 import (
+	"fmt"
+	"os"
+	"strconv"
+
 	"../config"
 	"../elevio"
-	"os"
-	"fmt"
-	"strconv"
 )
 
 func orderAbove(elevator config.Elev) bool {
 	for floor := elevator.Floor + 1; floor < config.NumFloor; floor++ {
-		for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+		for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
 			if elevator.Queue[floor][button] {
 				return true
 			}
@@ -21,7 +22,7 @@ func orderAbove(elevator config.Elev) bool {
 
 func orderBelow(elevator config.Elev) bool {
 	for floor := 0; floor < elevator.Floor; floor++ {
-		for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
+		for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
 			if elevator.Queue[floor][button] {
 				return true
 			}
@@ -29,9 +30,9 @@ func orderBelow(elevator config.Elev) bool {
 	}
 	return false
 }
-func orderAtFloor(elevator config.Elev)bool{
-	for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++{
-		if elevator.Queue[elevator.Floor][button]{
+func orderAtFloor(elevator config.Elev) bool {
+	for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
+		if elevator.Queue[elevator.Floor][button] {
 			return true
 		}
 	}
@@ -85,18 +86,17 @@ func chooseDirection(elevator config.Elev) elevio.MotorDirection {
 	return elevio.MD_Stop
 }
 
-
-func writetoFile(filname string, LocalID int, elevator config.Elev){
+func writetoFile(filname string, LocalID int, elevator config.Elev) {
 	idstring := strconv.Itoa(LocalID)
 	writeFile, _ := os.Create(filname + idstring)
 	var stringVariable string
-	
-	for i := 0; i < config.NumFloor; i++{
+
+	for i := 0; i < config.NumFloor; i++ {
 		if elevator.Queue[i][elevio.BT_Cab] {
 			stringVariable = stringVariable + "1"
-		}else{
+		} else {
 			stringVariable = stringVariable + "0"
-			}	
+		}
 	}
 	fmt.Println(stringVariable)
 	data := []byte(stringVariable)
@@ -104,17 +104,16 @@ func writetoFile(filname string, LocalID int, elevator config.Elev){
 
 }
 
-
-func readFromFile(filename string ,LocalID int, elevator * config.Elev){
+func readFromFile(filename string, LocalID int, elevator *config.Elev) {
 	idstring := strconv.Itoa(LocalID)
 	readFile, _ := os.Open(filename + idstring)
 	data := make([]byte, config.NumFloor)
 	readFile.Read(data)
 
-	for i := 0; i < config.NumFloor; i++{
+	for i := 0; i < config.NumFloor; i++ {
 		if string(data[i]) == "1" {
 			elevator.Queue[i][elevio.BT_Cab] = true
-		}else{
+		} else {
 			elevator.Queue[i][elevio.BT_Cab] = false
 		}
 	}
