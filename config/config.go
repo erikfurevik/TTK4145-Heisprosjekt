@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	NumFloor    int = 9
+	NumFloor    int = 4
 	NumElevator int = 3
 	NumButtons  int = 3
 )
