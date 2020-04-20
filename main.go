@@ -19,7 +19,7 @@ func main() {
 	localhost := "localhost:" + os.Args[2]
 	LocalID, _ := strconv.Atoi(LocalIDString)
 
-	msgpPort := 42000
+	msgpPort  := 42000
 	orderPort := 43000
 	peersPort := 44000
 
