@@ -9,14 +9,20 @@ import (
 )
 
 type StateChannels struct {
-	OrderComplete  chan int
 	ArrivedAtFloor chan int
 	NewOrder       chan elevio.ButtonEvent
 	Elevator       chan config.Elev
 	DeleteQueue    chan [config.NumFloor][config.NumButtons]bool
 }
 
-func RunElevator(channel StateChannels, LocalID int) {
+/*This function handles the fsm logic of the elevator. It has the following respisibilities
+	- Take orders in the correct sequence
+	- Update elevator controller about any changes in local elevator
+	- Check for engine failure
+	- Handle fault tolerance such as system crash by saving orders to file
+	- Handle floor lights
+*/
+func RunElevator(LocalID int,channel StateChannels) {
 	elevator := config.Elev{
 		State: config.Idle,
 		Dir:   elevio.MD_Stop,
@@ -110,31 +116,6 @@ func RunElevator(channel StateChannels, LocalID int) {
 			updateExternal = false
 			writetoFile("cabOrders", LocalID, elevator)
 			go func() { channel.Elevator <- elevator }()
-		}
-	}
-}
-
-func UpdateKeys(NewOrder chan config.Keypress, receiveOrder chan elevio.ButtonEvent) {
-	var key config.Keypress
-	key.DesignatedElevator = 1
-	for {
-		select {
-		case order := <-receiveOrder:
-			key.Floor = order.Floor
-			key.Button = order.Button
-			NewOrder <- key
-
-		}
-	}
-}
-
-func Testchannels(channel StateChannels) {
-	for {
-		select {
-		case a := <-channel.ArrivedAtFloor:
-			fmt.Println(a)
-		case b := <-channel.NewOrder:
-			fmt.Println(b.Floor)
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package NetworkController
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -10,26 +9,34 @@ import (
 )
 
 type NetworkChannels struct {
-	//from network to elevator controller
-	UpdateMainLogic      chan [config.NumElevator]config.Elev //updates elevatorController with the states of the other elevators.
-	OnlineElevators      chan [config.NumElevator]bool        //updated elevatorController of which elevators are online
-	ExternalOrderToLocal chan config.Keypress                 //updates elevator controller with orders recieved from abroad.
+	//from network controller to elevator controller
+	UpdateMainLogic      chan [config.NumElevator]config.Elev 	//updates elevatorController with the states of the other elevators.
+	OnlineElevators      chan [config.NumElevator]bool        	//updated elevatorController of which elevators are online
+	ExternalOrderToLocal chan config.Keypress                 	//updates elevator controller with orders recieved from abroad.
 
-	//from elevator to network controller
-	LocalOrderToExternal    chan config.Keypress                 //channel used to broadcast local orders.
-	LocalElevatorToExternal chan [config.NumElevator]config.Elev //channel that broadcast the status of the local elevator
+	//from elevator controller to network controller
+	LocalOrderToExternal    chan config.Keypress                 //broadcast local orders.
+	LocalElevatorToExternal chan [config.NumElevator]config.Elev //broadcast the status of the local elevator
 
 	//network controller to network
-	OutgoingMsg         chan config.Message  //not cocern of elevatorController
-	OutgoingOrder       chan config.Keypress //new local order that is broadcasted
-	PeersTransmitEnable chan bool            //channel updating the other elevators about my presence
+	OutgoingMsg         chan config.Message  					
+	OutgoingOrder       chan config.Keypress 					
+	PeersTransmitEnable chan bool            					
 
 	//network to network controller
-	IncomingMsg   chan config.Message   //not concern of elevatorController
-	IncomingOrder chan config.Keypress  //new order recieved from abroad elevator
-	PeerUpdate    chan peers.PeerUpdate //channel going to network controller update about the other networks
+	IncomingMsg   chan config.Message   						
+	IncomingOrder chan config.Keypress  						
+	PeerUpdate    chan peers.PeerUpdate 						
 
 }
+/*This is the brain of the network. It has the following resposibilities
+	- Check which elevator is on the network
+	- Pass local orders to external elevator
+	- Pass external orders to local elevator
+	- Receive external elevator updates
+	- Send local elevator updates
+	- It handles fault tolerances such as packet loss and packet corruption
+*/
 
 func NetworkController(Local_ID int, channel NetworkChannels) {
 	var (
@@ -39,7 +46,7 @@ func NetworkController(Local_ID int, channel NetworkChannels) {
 		incomingOrder config.Keypress
 	)
 
-	PrimaryOrderTimer := time.NewTicker(100 * time.Millisecond)
+	primaryOrderTicker := time.NewTicker(100 * time.Millisecond)
 	orderTicker := time.NewTicker(10 * time.Millisecond)
 	broadcastMsgTicker := time.NewTicker(40 * time.Millisecond)
 	deleteIncomingOrderTicker := time.NewTicker(1 * time.Second)
@@ -51,25 +58,26 @@ func NetworkController(Local_ID int, channel NetworkChannels) {
 
 	for {
 		select {
-		case msg.Elevator = <-channel.LocalElevatorToExternal: //update of our elevator
-		case ExternalOrder := <-channel.LocalOrderToExternal: //recived order on local elevator
-			queue = append(queue, ExternalOrder) //put order into queue
+		case msg.Elevator = <-channel.LocalElevatorToExternal: //update of our elevator struct
 
-		case inOrder := <-channel.IncomingOrder: //recieved order from abroad elevator
+		case ExternalOrder := <-channel.LocalOrderToExternal: //recived order on local elevator
+			queue = append(queue, ExternalOrder)
+
+		case inOrder := <-channel.IncomingOrder: //receive order from abroad
 			if inOrder.DesignatedElevator == Local_ID && incomingOrder != inOrder {
 				incomingOrder = inOrder
 				channel.ExternalOrderToLocal <- inOrder
 			}
-		case inMSG := <-channel.IncomingMsg: //state of an abroad elevator
+		case inMSG := <-channel.IncomingMsg: //incomming abroad elevator struct
 			if inMSG.ID != Local_ID && inMSG.Elevator[inMSG.ID] != msg.Elevator[inMSG.ID] {
-				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID] //update message strcut
+				msg.Elevator[inMSG.ID] = inMSG.Elevator[inMSG.ID]
 				channel.UpdateMainLogic <- msg.Elevator
 			}
-		case <-broadcastMsgTicker.C:
+		case <-broadcastMsgTicker.C: //broadcast our elevator struct
 			if onlineList[Local_ID] {
 				channel.OutgoingMsg <- msg
 			}
-		case <-PrimaryOrderTimer.C:
+		case <-primaryOrderTicker.C: // reset order ticker if queue is not empty, else stop order ticker
 			if len(queue) > 0 {
 				outgoingOrder = queue[0]
 				queue = queue[1:]
@@ -77,12 +85,13 @@ func NetworkController(Local_ID int, channel NetworkChannels) {
 			} else {
 				orderTicker.Stop()
 			}
-		case <-orderTicker.C:
-			channel.OutgoingOrder <- outgoingOrder //bradcast order
+		case <-orderTicker.C: //send the same order for every tick
+			channel.OutgoingOrder <- outgoingOrder
 
-		case <-deleteIncomingOrderTicker.C:
+		case <-deleteIncomingOrderTicker.C: //clean the incomingOrder variable at every tick
 			incomingOrder = config.Keypress{Floor: -1}
-		case peerUpdate := <-channel.PeerUpdate:
+
+		case peerUpdate := <-channel.PeerUpdate: //check online status
 			if len(peerUpdate.Peers) == 0 {
 				for id := 0; id < config.NumElevator; id++ {
 					onlineList[id] = false
@@ -97,10 +106,6 @@ func NetworkController(Local_ID int, channel NetworkChannels) {
 				onlineList[lostElev] = false
 			}
 			go func() { channel.OnlineElevators <- onlineList }()
-
-			fmt.Println("Number peers.", len(peerUpdate.Peers))
-			fmt.Println("New peers: ", peerUpdate.New)
-			fmt.Println("Lost peers", peerUpdate.Lost)
 		}
 	}
 }

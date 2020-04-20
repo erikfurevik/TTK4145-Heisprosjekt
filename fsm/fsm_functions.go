@@ -1,7 +1,6 @@
 package fsm
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -98,7 +97,6 @@ func writetoFile(filname string, LocalID int, elevator config.Elev) {
 			stringVariable = stringVariable + "0"
 		}
 	}
-	fmt.Println(stringVariable)
 	data := []byte(stringVariable)
 	writeFile.Write(data)
 
@@ -118,6 +116,4 @@ func readFromFile(filename string, LocalID int, elevator *config.Elev) {
 		}
 	}
 	readFile.Close()
-
-	fmt.Println(elevator.Queue)
 }
